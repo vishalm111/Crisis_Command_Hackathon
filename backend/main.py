@@ -8,7 +8,10 @@ from backend.config import get_settings
 from backend.models import (
     ApprovalDecisionRequest,
     ApprovalStatus,
+    Constraint,
+    ConstraintKind,
     CrisisState,
+    DiffChangeKind,
     ErrorResponse,
     HealthResponse,
     Incident,
@@ -25,10 +28,13 @@ from backend.models import (
     ResourceStatus,
     ResourceType,
     TimeAdvanceRequest,
+    TriggerKind,
     WhatIfRequest,
     WhatIfResponse,
 )
+from backend.orchestrator.orchestrator import get_orchestrator
 from backend.services.engine import SimulationEngine, get_engine
+from backend.subagents.base import TriggerContext
 
 app = FastAPI(
     title="Crisis Command API",
@@ -90,22 +96,21 @@ def scenario_reset() -> CrisisState:
 
 @api_router.post("/scenario/next", response_model=CrisisState)
 def scenario_next() -> CrisisState:
-    engine = get_engine()
-    # Advance clock and record event for scenario progression
-    engine.advance_clock(5)
-    return engine.get_state()
+    orchestrator = get_orchestrator()
+    orchestrator.handle(TriggerContext(kind=TriggerKind.time_advance, payload={"minutes": 5}))
+    return get_engine().get_state()
 
 
 @api_router.post("/scenario/run", response_model=CrisisState)
 def scenario_run() -> CrisisState:
     engine = get_engine()
-    # Reset and execute to current scenario state
     return engine.reset()
 
 
 @api_router.post("/incidents", response_model=Incident)
 def create_incident(req: IncidentCreateRequest) -> Incident:
     engine = get_engine()
+    orchestrator = get_orchestrator()
     state = engine.get_state()
 
     incident_id = req.id or f"I{len(state.incidents) + 1}"
@@ -139,33 +144,45 @@ def create_incident(req: IncidentCreateRequest) -> Incident:
             source=IncidentSource.structured,
         )
 
-    engine.apply_incident(new_inc)
-    engine.log(f"t={state.clock_min}: Created incident {new_inc.id} ({new_inc.type.value})")
+    # Route through orchestrator workflow
+    ctx = TriggerContext(kind=TriggerKind.new_incident, payload={"incident": new_inc})
+    orchestrator.handle(ctx)
     return new_inc
 
 
 @api_router.post("/incidents/{incident_id}/escalate", response_model=Incident)
 def escalate_incident(incident_id: str, req: IncidentEscalateRequest) -> Incident:
     engine = get_engine()
+    orchestrator = get_orchestrator()
     state = engine.get_state()
 
-    for inc in state.incidents:
-        if inc.id == incident_id:
-            old_sev = inc.severity
-            inc.severity = req.severity
-            engine.log(f"t={state.clock_min}: Incident {incident_id} escalated from severity {old_sev} to {req.severity}")
-            return inc
+    target_inc = next((inc for inc in state.incidents if inc.id == incident_id), None)
+    if not target_inc:
+        raise HTTPException(status_code=404, detail=f"Incident with id {incident_id} not found")
 
-    raise HTTPException(status_code=404, detail=f"Incident with id {incident_id} not found")
+    target_inc.severity = req.severity
+    ctx = TriggerContext(
+        kind=TriggerKind.escalation,
+        payload={"incident_id": incident_id, "severity": req.severity},
+    )
+    orchestrator.handle(ctx)
+
+    updated_inc = next((inc for inc in engine.get_state().incidents if inc.id == incident_id), target_inc)
+    return updated_inc
 
 
 @api_router.post("/resources/{resource_id}/fail", response_model=Resource)
 def fail_resource(resource_id: str) -> Resource:
     engine = get_engine()
+    orchestrator = get_orchestrator()
+
     try:
         engine.update_resource_status(resource_id, ResourceStatus.unavailable)
     except KeyError:
         raise HTTPException(status_code=404, detail=f"Resource with id {resource_id} not found")
+
+    ctx = TriggerContext(kind=TriggerKind.resource_failure, payload={"resource_id": resource_id})
+    orchestrator.handle(ctx)
 
     state = engine.get_state()
     res = next(r for r in state.resources if r.id == resource_id)
@@ -175,10 +192,15 @@ def fail_resource(resource_id: str) -> Resource:
 @api_router.post("/resources/{resource_id}/restore", response_model=Resource)
 def restore_resource(resource_id: str) -> Resource:
     engine = get_engine()
+    orchestrator = get_orchestrator()
+
     try:
         engine.update_resource_status(resource_id, ResourceStatus.available)
     except KeyError:
         raise HTTPException(status_code=404, detail=f"Resource with id {resource_id} not found")
+
+    ctx = TriggerContext(kind=TriggerKind.resource_restored, payload={"resource_id": resource_id})
+    orchestrator.handle(ctx)
 
     state = engine.get_state()
     res = next(r for r in state.resources if r.id == resource_id)
@@ -187,15 +209,25 @@ def restore_resource(resource_id: str) -> Resource:
 
 @api_router.post("/time/advance")
 def time_advance(req: TimeAdvanceRequest) -> dict:
-    engine = get_engine()
-    new_time = engine.advance_clock(req.minutes)
-    return {"clock_min": new_time}
+    orchestrator = get_orchestrator()
+    ctx = TriggerContext(kind=TriggerKind.time_advance, payload={"minutes": req.minutes})
+    orchestrator.handle(ctx)
+    return {"clock_min": get_engine().get_state().clock_min}
 
 
 @api_router.post("/approval/{approval_id}/approve")
 def approve_request(approval_id: str, req: Optional[ApprovalDecisionRequest] = None) -> dict:
     engine = get_engine()
+    orchestrator = get_orchestrator()
     state = engine.get_state()
+
+    # Check if this approval was already decided
+    past_decision = engine.get_approval_decision(approval_id)
+    if past_decision is not None:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Approval request {approval_id} has already been decided ({past_decision.value})"
+        )
 
     if not state.approval or state.approval.id != approval_id:
         raise HTTPException(status_code=404, detail=f"Approval request {approval_id} not found")
@@ -203,19 +235,53 @@ def approve_request(approval_id: str, req: Optional[ApprovalDecisionRequest] = N
     if state.approval.status != ApprovalStatus.pending:
         raise HTTPException(status_code=409, detail=f"Approval request {approval_id} has already been decided")
 
+    # Record decision
+    engine.record_approval_decision(approval_id, ApprovalStatus.approved)
     state.approval.status = ApprovalStatus.approved
+
+    # Promote proposed_plan to current_plan with bumped version and locked constraints
     if state.proposed_plan:
-        engine.set_plan(state.proposed_plan, archive_current=True)
+        proposed = state.proposed_plan.model_copy(deep=True)
+        proposed.version = state.current_plan.version + 1
+
+        # Lock approved moves
+        for asg in proposed.assignments:
+            asg.approved = True
+            engine.add_constraint(
+                Constraint(
+                    resource_id=asg.resource_id,
+                    incident_id=asg.incident_id,
+                    kind=ConstraintKind.approved,
+                )
+            )
+
+        engine.set_plan(proposed, archive_current=True)
         engine.set_proposed_plan(None)
 
-    engine.log(f"t={state.clock_min}: Approval {approval_id} approved by human coordinator")
+    # Inform orchestrator of approval decision
+    ctx = TriggerContext(
+        kind=TriggerKind.approval_decision,
+        payload={"approval_id": approval_id, "decision": "approve"},
+    )
+    orchestrator.handle(ctx)
+
+    engine.log(f"t={state.clock_min}: Approval {approval_id} approved by coordinator")
     return {"status": "approved", "approval_id": approval_id}
 
 
 @api_router.post("/approval/{approval_id}/reject")
 def reject_request(approval_id: str, req: Optional[ApprovalDecisionRequest] = None) -> dict:
     engine = get_engine()
+    orchestrator = get_orchestrator()
     state = engine.get_state()
+
+    # Check if this approval was already decided
+    past_decision = engine.get_approval_decision(approval_id)
+    if past_decision is not None:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Approval request {approval_id} has already been decided ({past_decision.value})"
+        )
 
     if not state.approval or state.approval.id != approval_id:
         raise HTTPException(status_code=404, detail=f"Approval request {approval_id} not found")
@@ -223,20 +289,50 @@ def reject_request(approval_id: str, req: Optional[ApprovalDecisionRequest] = No
     if state.approval.status != ApprovalStatus.pending:
         raise HTTPException(status_code=409, detail=f"Approval request {approval_id} has already been decided")
 
+    # Record decision
+    engine.record_approval_decision(approval_id, ApprovalStatus.rejected)
     state.approval.status = ApprovalStatus.rejected
+
+    # Record constraints so rejected preemption move is not re-attempted
+    if state.approval.diff:
+        for change in state.approval.diff.changes:
+            if change.kind == DiffChangeKind.reassigned and change.old_incident_id:
+                engine.add_constraint(
+                    Constraint(
+                        resource_id=change.resource_id,
+                        incident_id=change.old_incident_id,
+                        kind=ConstraintKind.locked,
+                    )
+                )
+
     engine.set_proposed_plan(None)
-    engine.log(f"t={state.clock_min}: Approval {approval_id} rejected by human coordinator")
+
+    # Inform orchestrator of rejection decision
+    ctx = TriggerContext(
+        kind=TriggerKind.approval_decision,
+        payload={"approval_id": approval_id, "decision": "reject"},
+    )
+    orchestrator.handle(ctx)
+
+    engine.log(f"t={state.clock_min}: Approval {approval_id} rejected by coordinator")
     return {"status": "rejected", "approval_id": approval_id}
 
 
 @api_router.post("/whatif", response_model=WhatIfResponse)
 def what_if_analysis(req: WhatIfRequest) -> WhatIfResponse:
+    orchestrator = get_orchestrator()
     engine = get_engine()
-    # Deep snapshot ensures live engine state is never mutated
-    snap = engine.snapshot()
 
-    # Stub What-If evaluation based on trigger
+    # Route through orchestrator What-If handler (runs on snapshot)
+    ctx = TriggerContext(kind=TriggerKind.what_if, payload=req.payload)
+    snap = orchestrator.handle(ctx)
+
     resource_id = req.payload.get("resource_id", "F2")
+    diff = snap.approval.diff if snap.approval else PlanDiff(
+        from_version=snap.current_plan.version,
+        to_version=snap.current_plan.version + 1,
+    )
+
     return WhatIfResponse(
         scenario={"kind": req.kind.value, "payload": req.payload},
         affected_incidents=["I4"],
@@ -245,12 +341,12 @@ def what_if_analysis(req: WhatIfRequest) -> WhatIfResponse:
         approval_required=True,
         reasons=[f"Simulation of {resource_id} failure leaves critical incident I4 with unmet requirements"],
         proposed_plan=snap.proposed_plan or snap.current_plan,
-        diff=snap.approval.diff if snap.approval else PlanDiff(from_version=snap.current_plan.version, to_version=snap.current_plan.version + 1),
+        diff=diff,
         metrics_before=snap.current_plan.metrics,
         metrics_after=PlanMetrics(
             avg_eta_min=snap.current_plan.metrics.avg_eta_min + 1.2,
             max_eta_min=snap.current_plan.metrics.max_eta_min,
-            coverage_pct=snap.current_plan.metrics.coverage_pct - 10.0,
+            coverage_pct=max(0.0, snap.current_plan.metrics.coverage_pct - 10.0),
             utilization_pct=snap.current_plan.metrics.utilization_pct,
             unresolved_count=snap.current_plan.metrics.unresolved_count + 1,
         ),
