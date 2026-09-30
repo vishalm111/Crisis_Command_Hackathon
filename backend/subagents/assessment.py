@@ -82,13 +82,13 @@ def parse_free_text_rule_based(
     elif re.search(r"\b(fire|smoke|flames|burning|blaze|explosion)\b", lower_text):
         inc_type = IncidentType.fire
         rules_applied.append("Type rule: matched fire/smoke keywords -> fire")
-    elif re.search(r"\b(building collapse|structure collapse|structural collapse|search and rescue|under rubble|buried|cave-in)\b", lower_text):
+    elif re.search(r"\b(building collapse|bldng colapse|structure collapse|structural collapse|colapse|collapse|search and rescue|under rubble|ruble|buried|cave-in|rescuer)\b", lower_text):
         inc_type = IncidentType.rescue
-        rules_applied.append("Type rule: matched structural collapse keywords -> rescue")
+        rules_applied.append("Type rule: matched structural collapse/rescue keywords -> rescue")
     elif re.search(r"\b(heart attack|chest pain|unconscious|collapsed|cardiac|medical|ambulance|patient|injured|injury|bleeding|sick)\b", lower_text):
         inc_type = IncidentType.medical
         rules_applied.append("Type rule: matched medical/cardiac/collapse keywords -> medical")
-    elif re.search(r"\b(trapped|rescue)\b", lower_text):
+    elif re.search(r"\b(trapped|traped|rescue)\b", lower_text):
         inc_type = IncidentType.rescue
         rules_applied.append("Type rule: matched rescue keywords -> rescue")
     else:
@@ -100,8 +100,8 @@ def parse_free_text_rule_based(
     severity = 3
     has_severity_cue = False
 
-    critical_cues = ["explosion", "building collapse", "multiple casualties", "cardiac arrest"]
-    high_cues = ["collapsed", "trapped", "unconscious", "heart attack", "severe", "critical", "heavy smoke"]
+    critical_cues = ["explosion", "building collapse", "bldng colapse", "multiple casualties", "cardiac arrest"]
+    high_cues = ["collapsed", "colapse", "trapped", "traped", "unconscious", "heart attack", "severe", "critical", "heavy smoke"]
     minor_cues = ["minor", "small", "stable", "contained", "conscious"]
 
     if any(re.search(rf"\b{re.escape(w)}\b", lower_text) for w in critical_cues):
