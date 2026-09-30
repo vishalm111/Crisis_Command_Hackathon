@@ -31,7 +31,12 @@ class SimulationEngine:
         else:
             self.seed_path = seed_path
         self._approval_history: dict[str, ApprovalStatus] = {}
+        self._reset_listeners: list = []
         self._state: CrisisState = self._load_initial_state()
+
+    def register_reset_listener(self, callback) -> None:
+        """Registers a callback to be notified when reset() is invoked."""
+        self._reset_listeners.append(callback)
 
     def _load_initial_state(self) -> CrisisState:
         # Check if P4's seed generator exists
@@ -51,9 +56,15 @@ class SimulationEngine:
         return self._state
 
     def reset(self) -> CrisisState:
-        """Resets the simulation to the initial seed state. Idempotent."""
+        """Resets the simulation to the initial seed state. Idempotent and safe at any moment."""
         self._approval_history.clear()
         self._state = self._load_initial_state()
+        for cb in self._reset_listeners:
+            try:
+                cb()
+            except Exception:
+                pass
+        self.log(f"t={self._state.clock_min}: Simulation reset to initial seed state")
         return self._state
 
     def record_approval_decision(self, approval_id: str, status: ApprovalStatus) -> None:

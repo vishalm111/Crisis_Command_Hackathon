@@ -1,3 +1,5 @@
+import json
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 from backend.models.domain import (
@@ -251,9 +253,33 @@ class Orchestrator:
 
     def __init__(self, engine: Optional[SimulationEngine] = None) -> None:
         self.engine = engine or get_engine()
+        self._debounce_cache: Dict[str, Tuple[float, CrisisState]] = {}
+        if hasattr(self.engine, "register_reset_listener"):
+            self.engine.register_reset_listener(self._clear_debounce_cache)
+
+    def _clear_debounce_cache(self) -> None:
+        self._debounce_cache.clear()
+
+    def _make_trigger_key(self, ctx: TriggerContext) -> str:
+        try:
+            payload_str = json.dumps(ctx.payload, default=str, sort_keys=True)
+        except Exception:
+            payload_str = str(ctx.payload)
+        return f"{ctx.kind.value}:{payload_str}"
 
     def handle(self, ctx: TriggerContext) -> CrisisState:
         """Handles any crisis trigger and advances the state."""
+        # Debounce check (P1-T2): same trigger within 1.0s is ignored / returns cached state
+        now = time.time()
+        trigger_key = self._make_trigger_key(ctx)
+        if trigger_key in self._debounce_cache:
+            last_time, cached_state = self._debounce_cache[trigger_key]
+            if now - last_time < 1.0:
+                self.engine.log(
+                    f"t={self.engine.get_state().clock_min}: Debounced duplicate trigger '{ctx.kind.value}' within 1s"
+                )
+                return cached_state
+
         if ctx.kind != TriggerKind.what_if:
             self.engine.log(f"t={self.engine.get_state().clock_min}: Trigger received: {ctx.kind.value}")
 
@@ -264,6 +290,7 @@ class Orchestrator:
             payload, traces, _ = run_flow("what_if", snap, ctx)
             for t in traces:
                 snap.traces.append(t)
+            self._debounce_cache[trigger_key] = (time.time(), snap)
             # Return the simulated state representation without engine side-effects
             return snap
 
@@ -344,7 +371,9 @@ class Orchestrator:
                     f"t={self.engine.get_state().clock_min}: Plan v{new_plan.version} automatically committed"
                 )
 
-        return self.engine.get_state()
+        result_state = self.engine.get_state()
+        self._debounce_cache[trigger_key] = (time.time(), result_state)
+        return result_state
 
 
 _orchestrator_instance: Optional[Orchestrator] = None
