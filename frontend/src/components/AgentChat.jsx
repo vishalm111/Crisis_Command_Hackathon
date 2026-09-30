@@ -71,9 +71,9 @@ export default function AgentChat({
   // Auto-scroll to newest on message update
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
     }
-  }, [messageList]);
+  }, [messageList.length]);
 
   const filteredMessages = messageList.filter((msg) => {
     if (filterAgent === 'ALL') return true;
