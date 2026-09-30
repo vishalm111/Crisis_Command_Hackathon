@@ -375,7 +375,100 @@ def test_p2_t1_scenario_explainer_timeout(monkeypatch):
     exp = result.payload["explanation"]
 
     assert exp is not None
+    assert exp is not None
     assert any("A1 moved from I1 to I4" in b for b in exp.bullets)
     assert result.traces[0].used_llm is False
     assert result.traces[0].fallback_used is True
+
+
+def test_p2_t3_full_scenario_hand_audit():
+    """
+    P2-T3: Hand audit verification across all scenario explanation steps.
+    Verifies that generated explanation bullets for Step 1 (dispatch), Step 2 (multi-dispatch),
+    and Step 4 (preemption) contain only grounded entity IDs and valid numerical values from
+    underlying traces and diffs.
+    """
+    agent = ExplainerSubAgent()
+
+    # Step 1: Baseline dispatch at t=0
+    i1 = Incident(
+        id="I1",
+        type=IncidentType.medical,
+        severity=3,
+        location=LatLng(lat=12.9716, lng=77.5946, label="MG Road Metro"),
+        people_affected=2,
+        reported_at_min=0,
+        status=IncidentStatus.assigned,
+        priority=42.0,
+        tier=Tier.medium,
+    )
+    diff_step1 = PlanDiff(
+        from_version=0,
+        to_version=1,
+        changes=[
+            DiffChange(
+                resource_id="A1",
+                kind=DiffChangeKind.added,
+                old_incident_id=None,
+                new_incident_id="I1",
+                old_eta_min=None,
+                new_eta_min=6.2,
+                reason="Nearest available ambulance assigned",
+            )
+        ],
+    )
+    state1 = CrisisState(
+        clock_min=0,
+        incidents=[i1],
+        resources=[],
+        facilities=[],
+        current_plan=Plan(id="plan_1", version=1, assignments=[], unmet=[]),
+        traces=[
+            TraceEntry(
+                agent="assessment",
+                step="score",
+                detail="I1 medical emergency scored priority 42.0 (medium)",
+                used_llm=False,
+                fallback_used=False,
+                at_min=0,
+            ),
+            TraceEntry(
+                agent="allocation",
+                step="assign",
+                detail="Assigned free ambulance A1 to I1 (ETA 6.2m)",
+                used_llm=False,
+                fallback_used=False,
+                at_min=0,
+            ),
+        ],
+    )
+    res1 = agent.run(state1, TriggerContext(kind=TriggerKind.new_incident, payload={"diff": diff_step1}))
+    bullets1 = res1.payload["explanation"].bullets
+    assert len(bullets1) >= 1
+    assert any("A1 dispatched to I1 with estimated arrival in 6.2 minutes" in b for b in bullets1)
+    # Check tokens
+    ids1, nums1 = extract_identifiers_and_numbers(" ".join(bullets1))
+    for bid in ids1:
+        assert bid in ["A1", "I1"], f"Unexpected ID {bid} in Step 1 explanation"
+
+    # Step 4: Preemption & catastrophe at t=15
+    state4, diff4 = _make_scenario_step4_fixture()
+    res4 = agent.run(state4, TriggerContext(kind=TriggerKind.new_incident, payload={"diff": diff4}))
+    bullets4 = res4.payload["explanation"].bullets
+    assert len(bullets4) >= 2
+
+    # Check preemption bullet grounding
+    preempt_bullet = next(b for b in bullets4 if "A1 moved from I1 to I4" in b)
+    ids4, nums4 = extract_identifiers_and_numbers(preempt_bullet)
+    assert set(ids4) == {"A1", "I1", "I4"}
+    assert 70.0 in nums4
+    assert 49.5 in nums4
+    assert 8.0 in nums4
+
+    # Verification of zero ungrounded/hallucinated entities
+    for bullet in bullets4:
+        b_ids, b_nums = extract_identifiers_and_numbers(bullet)
+        for i in b_ids:
+            assert i in ["A1", "I1", "I4", "R1"], f"Ungrounded entity {i} in Step 4 explanation"
+
 
