@@ -16,16 +16,15 @@ jobs:
           python-version: "3.11"
       - run: pip install -r requirements.txt
       # exit code 5 = no tests collected yet; allow it early in the project
-      - run: pytest backend/tests -q || [ $? -eq 5 ]
+      - run: python -m pytest backend/tests -q || [ $? -eq 5 ]
 
   frontend:
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('frontend/package.json') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
       - run: npm install
         working-directory: frontend
       - run: npm run build
