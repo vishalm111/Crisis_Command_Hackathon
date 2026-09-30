@@ -15,6 +15,7 @@ const EMERGENCY_TYPES = [
 export default function AddIncidentForm({
   onIncidentAdded = null,
   apiUrl = "",
+  llmStatus = "disabled",
 }) {
   const [mode, setMode] = useState('structured'); // 'structured' | 'free_text'
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -308,13 +309,29 @@ export default function AddIncidentForm({
               />
             </div>
 
-            {/* AI Parsing Informational Notice */}
-            <div className="p-3.5 rounded-lg bg-indigo-950/20 border border-indigo-500/30 text-xs text-indigo-300 flex items-start gap-2.5">
-              <span className="text-base">🤖</span>
-              <div className="leading-relaxed">
-                <strong>Autonomous Assessment Sub-Agent:</strong> This transmission will be parsed automatically via xAI Grok (with deterministic rule-based fallback). Vague or ambiguous fields will be tagged into <code className="bg-indigo-900/40 px-1 py-0.5 rounded text-indigo-200">uncertain_fields</code> and held for human confirmation before resource allocation.
+            {/* AI Parsing Informational Notice / Fallback Status */}
+            {llmStatus === 'enabled_ok' ? (
+              <div className="p-3.5 rounded-lg bg-purple-950/20 border border-purple-500/30 text-xs text-purple-300 flex items-start gap-2.5">
+                <span className="text-base">✨</span>
+                <div className="leading-relaxed">
+                  <strong>xAI Grok Active:</strong> Emergency transmission will be parsed automatically via Grok LLM with structured JSON extraction. Missing or unverified locations will be flagged for human confirmation.
+                </div>
               </div>
-            </div>
+            ) : llmStatus === 'enabled_fallback' ? (
+              <div className="p-3.5 rounded-lg bg-amber-950/20 border border-amber-500/30 text-xs text-amber-300 flex items-start gap-2.5">
+                <span className="text-base">🛡️</span>
+                <div className="leading-relaxed">
+                  <strong>LLM Fallback Active:</strong> Grok is currently unreachable, timed out, or returning fallback. Deterministic keyword parsing and rule-based safety extraction will process the incident safely.
+                </div>
+              </div>
+            ) : (
+              <div className="p-3.5 rounded-lg bg-slate-900/60 border border-slate-700/60 text-xs text-slate-300 flex items-start gap-2.5">
+                <span className="text-base">⚙️</span>
+                <div className="leading-relaxed">
+                  <strong>Deterministic Safety Mode (Offline):</strong> Autonomous assessment uses zero-external-dependency rule-based keyword extraction. Vague locations trigger human confirmation.
+                </div>
+              </div>
+            )}
           </div>
         )}
 

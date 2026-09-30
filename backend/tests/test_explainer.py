@@ -299,3 +299,83 @@ def test_p2_a3_trace_consistency():
             assert num in source_numbers or num == 8.0, (
                 f"Number '{num}' in bullet '{bullet}' not found in source traces/diff!"
             )
+
+
+def test_p2_t1_scenario_explainer_no_key(monkeypatch):
+    """P2-T1: Scenario explanation runs cleanly with no key, producing deterministic bullets."""
+    monkeypatch.setenv("LLM_ENABLED", "true")
+    monkeypatch.setenv("XAI_API_KEY", "")
+
+    state, diff = _make_scenario_step4_fixture()
+    client = LLMClient()
+    agent = ExplainerSubAgent(llm_client=client)
+
+    result = agent.run(state, TriggerContext(kind=TriggerKind.new_incident, payload={"diff": diff}))
+    exp = result.payload["explanation"]
+
+    assert exp is not None
+    assert len(exp.bullets) >= 2
+    assert any("A1 moved from I1 to I4" in b for b in exp.bullets)
+    assert result.traces[0].used_llm is False
+    assert result.traces[0].fallback_used is True
+
+
+def test_p2_t1_scenario_explainer_wrong_key(monkeypatch):
+    """P2-T1: Scenario explanation runs cleanly with wrong API key (HTTP 401), retaining deterministic bullets."""
+    import httpx
+    import openai
+    from unittest.mock import MagicMock
+
+    monkeypatch.setenv("LLM_ENABLED", "true")
+    monkeypatch.setenv("XAI_API_KEY", "invalid-key-xyz")
+
+    def mock_create(*args, **kwargs):
+        response = httpx.Response(status_code=401, request=httpx.Request("POST", "https://api.x.ai/v1/chat/completions"))
+        raise openai.AuthenticationError(message="Invalid API Key", response=response, body={"error": "unauthorized"})
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.side_effect = mock_create
+    monkeypatch.setattr(openai, "OpenAI", lambda *args, **kwargs: mock_client)
+
+    state, diff = _make_scenario_step4_fixture()
+    client = LLMClient()
+    agent = ExplainerSubAgent(llm_client=client)
+
+    result = agent.run(state, TriggerContext(kind=TriggerKind.new_incident, payload={"diff": diff}))
+    exp = result.payload["explanation"]
+
+    assert exp is not None
+    assert any("A1 moved from I1 to I4" in b for b in exp.bullets)
+    assert result.traces[0].used_llm is False
+    assert result.traces[0].fallback_used is True
+
+
+def test_p2_t1_scenario_explainer_timeout(monkeypatch):
+    """P2-T1: Scenario explanation runs cleanly with 1-second timeout, retaining deterministic bullets."""
+    import httpx
+    import openai
+    from unittest.mock import MagicMock
+
+    monkeypatch.setenv("LLM_ENABLED", "true")
+    monkeypatch.setenv("XAI_API_KEY", "test-key")
+    monkeypatch.setenv("LLM_TIMEOUT_SECONDS", "1")
+
+    def mock_create(*args, **kwargs):
+        raise openai.APITimeoutError(request=httpx.Request("POST", "https://api.x.ai/v1/chat/completions"))
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.side_effect = mock_create
+    monkeypatch.setattr(openai, "OpenAI", lambda *args, **kwargs: mock_client)
+
+    state, diff = _make_scenario_step4_fixture()
+    client = LLMClient()
+    agent = ExplainerSubAgent(llm_client=client)
+
+    result = agent.run(state, TriggerContext(kind=TriggerKind.new_incident, payload={"diff": diff}))
+    exp = result.payload["explanation"]
+
+    assert exp is not None
+    assert any("A1 moved from I1 to I4" in b for b in exp.bullets)
+    assert result.traces[0].used_llm is False
+    assert result.traces[0].fallback_used is True
+
