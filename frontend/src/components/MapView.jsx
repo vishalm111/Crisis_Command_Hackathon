@@ -1,5 +1,5 @@
-import React, { Fragment } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import React, { Fragment, useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import mockState from '../../../contracts/mock_state.json';
@@ -46,8 +46,33 @@ const getResourceColor = (status) => {
     }
 };
 
+/**
+ * Automatically recalculates Leaflet view bounds and tiles on fullscreen toggle
+ */
+function MapResizer({ isFullscreen }) {
+    const map = useMap();
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            map.invalidateSize();
+        }, 120);
+        return () => clearTimeout(timeout);
+    }, [isFullscreen, map]);
+    return null;
+}
+
 export default function MapView({ state }) {
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const data = state || mockState;
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && isFullscreen) {
+                setIsFullscreen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isFullscreen]);
 
     if (!data || !data.incidents) {
         return (
@@ -60,18 +85,44 @@ export default function MapView({ state }) {
     const center = [12.97, 77.59]; // Central Bengaluru
 
     return (
-        <div className="bg-slate-900 p-3 shadow-xl rounded-xl border border-slate-800 text-slate-100 h-[400px] flex flex-col relative">
+        <div
+            className={`transition-all duration-200 flex flex-col ${
+                isFullscreen
+                    ? 'fixed inset-0 z-[9999] bg-slate-950 p-4 h-screen w-screen shadow-2xl'
+                    : 'bg-slate-900 p-3 shadow-xl rounded-xl border border-slate-800 text-slate-100 h-[400px] relative'
+            }`}
+        >
             <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
-                    <span>🗺️</span> Bengaluru Emergency Geospatial Map
-                </h2>
-                <div className="text-[11px] font-mono text-slate-400">
-                    {data.incidents?.length || 0} incidents &bull; {data.resources?.length || 0} units
+                <div className="flex items-center gap-2">
+                    <h2 className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
+                        <span>🗺️</span> Bengaluru Emergency Geospatial Map
+                    </h2>
+                    {isFullscreen && (
+                        <span className="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full">
+                            FULL SCREEN ACTIVE
+                        </span>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <div className="text-[11px] font-mono text-slate-400">
+                        {data.incidents?.length || 0} incidents &bull; {data.resources?.length || 0} units
+                    </div>
+
+                    <button
+                        onClick={() => setIsFullscreen(!isFullscreen)}
+                        className="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-2.5 py-1 rounded-lg text-xs font-medium border border-slate-700 transition-all flex items-center gap-1.5 shadow-sm"
+                        title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Expand to Fullscreen'}
+                    >
+                        <span>{isFullscreen ? '✕' : '⛶'}</span>
+                        <span>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+                    </button>
                 </div>
             </div>
 
             <div className="flex-1 rounded-lg overflow-hidden relative border border-slate-800">
                 <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%', backgroundColor: '#1e293b' }}>
+                    <MapResizer isFullscreen={isFullscreen} />
                     <TileLayer
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
