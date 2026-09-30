@@ -39,16 +39,16 @@ class SimulationEngine:
         self._reset_listeners.append(callback)
 
     def _load_initial_state(self) -> CrisisState:
-        # Check if P4's seed generator exists
+        if self.seed_path and self.seed_path.exists():
+            with open(self.seed_path, "r", encoding="utf-8") as f:
+                return CrisisState.model_validate_json(f.read())
+
         try:
             from backend.data.seed import get_seed_state  # type: ignore
             return get_seed_state()
         except (ImportError, AttributeError):
             pass
 
-        if self.seed_path.exists():
-            with open(self.seed_path, "r", encoding="utf-8") as f:
-                return CrisisState.model_validate_json(f.read())
         return CrisisState()
 
     def get_state(self) -> CrisisState:
