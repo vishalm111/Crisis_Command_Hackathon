@@ -190,8 +190,8 @@ class ExplainerSubAgent:
         fallback_used = False
         narration_note = "Used deterministic template bullets"
 
-        # 2. Attempt optional Grok fluent narration if LLM is enabled
-        if self.llm_client.enabled and self.llm_client.api_key.strip():
+        # 2. Attempt optional Grok fluent narration if deterministic bullets exist
+        if deterministic_bullets:
             user_prompt = (
                 f"Please rephrase the following emergency dispatch explanation bullets into clear, fluent narration:\n"
                 f"{chr(10).join('- ' + b for b in deterministic_bullets)}\n\n"
@@ -218,9 +218,12 @@ class ExplainerSubAgent:
                         used_llm = False
                         fallback_used = True
                         narration_note = "Narration changed or invented numbers/IDs; rejected in favor of deterministic bullets"
+                else:
+                    fallback_used = True
+                    narration_note = "LLM returned empty bullets; used deterministic template bullets"
             else:
                 fallback_used = True
-                narration_note = f"LLM narration unavailable or failed ({llm_res.error}); used deterministic bullets"
+                narration_note = f"LLM narration unavailable or failed ({llm_res.error or 'fallback'}); used deterministic bullets"
 
         # 3. Create Explanation model
         exp_id = ctx.payload.get("explanation_id") or f"exp_{clock_min}_{len(state.explanations) + 1}"

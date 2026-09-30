@@ -29,6 +29,7 @@ const TRIGGER_BADGES = {
 export default function ExplanationLog({
   explanations = null,
   traces = null,
+  llmStatus = null,
 }) {
   const [expandedBullets, setExpandedBullets] = useState({});
   const [filterTrigger, setFilterTrigger] = useState('ALL');
@@ -57,9 +58,25 @@ export default function ExplanationLog({
       {/* Header */}
       <div className="px-5 py-4 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-white flex items-center gap-2">
-            <span>🧠</span> Decision Explanations
-          </h2>
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-lg font-semibold tracking-tight text-white flex items-center gap-2">
+              <span>🧠</span> Decision Explanations
+            </h2>
+            {llmStatus && (
+              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono border ${
+                llmStatus === 'enabled_ok'
+                  ? 'bg-purple-500/10 text-purple-300 border-purple-500/30'
+                  : llmStatus === 'enabled_fallback'
+                  ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                  : 'bg-slate-800 text-slate-400 border-slate-700'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  llmStatus === 'enabled_ok' ? 'bg-purple-400 animate-pulse' : llmStatus === 'enabled_fallback' ? 'bg-amber-400' : 'bg-slate-400'
+                }`} />
+                {llmStatus === 'enabled_ok' ? 'Grok Active' : llmStatus === 'enabled_fallback' ? 'Grok Fallback' : 'Offline / Rule Mode'}
+              </span>
+            )}
+          </div>
           <p className="text-xs text-slate-400 mt-0.5">
             Deterministic and narrated rationale for plan updates, preemptions, and safety overrides
           </p>

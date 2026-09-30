@@ -326,3 +326,121 @@ def test_p2_a1_never_invent_location(monkeypatch):
     assert inc.needs_confirmation is True
     assert "location" in inc.uncertain_fields
 
+
+def test_p2_t1_scenario_assessment_no_key(monkeypatch):
+    """P2-T1: Scenario assessment runs cleanly with no key, falling back to rule parser."""
+    import openai
+    from backend.services.llm import LLMClient
+    
+    monkeypatch.setenv("LLM_ENABLED", "true")
+    monkeypatch.setenv("XAI_API_KEY", "")
+
+    client = LLMClient()
+    agent = AssessmentSubAgent(llm_client=client)
+
+    # Step 1: I1 medical at t=0
+    state0 = _make_empty_state(clock_min=0)
+    i1 = Incident(
+        id="I1",
+        type=IncidentType.medical,
+        severity=3,
+        location=LatLng(lat=12.9716, lng=77.5946, label="MG Road Metro"),
+        people_affected=2,
+        reported_at_min=0,
+        status=IncidentStatus.new,
+    )
+    r1 = agent.run(state0, TriggerContext(kind=TriggerKind.new_incident, payload={"incident": i1}))
+    assessed_i1 = r1.payload["incidents"][0]
+    assert assessed_i1.status == IncidentStatus.assessed
+    assert assessed_i1.priority == 42.0
+
+    # Step 3: I3 free-text report at t=10
+    state10 = _make_empty_state(clock_min=10)
+    r3 = agent.run(
+        state10,
+        TriggerContext(
+            kind=TriggerKind.new_incident,
+            payload={"free_text": "man collapsed near the flyover, maybe heart attack", "incident_id": "I3"},
+        ),
+    )
+    assessed_i3 = r3.payload["incidents"][0]
+    assert assessed_i3.needs_confirmation is True
+    assert "location" in assessed_i3.uncertain_fields
+    assert assessed_i3.type == IncidentType.medical
+    assert r3.traces[0].used_llm is False
+    assert r3.traces[0].fallback_used is True
+
+
+def test_p2_t1_scenario_assessment_wrong_key(monkeypatch):
+    """P2-T1: Scenario assessment runs cleanly with wrong API key (HTTP 401), falling back to rule parser."""
+    import httpx
+    import openai
+    from unittest.mock import MagicMock
+    from backend.services.llm import LLMClient
+
+    monkeypatch.setenv("LLM_ENABLED", "true")
+    monkeypatch.setenv("XAI_API_KEY", "invalid-key-xyz")
+
+    def mock_create(*args, **kwargs):
+        response = httpx.Response(status_code=401, request=httpx.Request("POST", "https://api.x.ai/v1/chat/completions"))
+        raise openai.AuthenticationError(message="Invalid API Key", response=response, body={"error": "unauthorized"})
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.side_effect = mock_create
+    monkeypatch.setattr(openai, "OpenAI", lambda *args, **kwargs: mock_client)
+
+    client = LLMClient()
+    agent = AssessmentSubAgent(llm_client=client)
+
+    state10 = _make_empty_state(clock_min=10)
+    res = agent.run(
+        state10,
+        TriggerContext(
+            kind=TriggerKind.new_incident,
+            payload={"free_text": "man collapsed near the flyover, maybe heart attack", "incident_id": "I3"},
+        ),
+    )
+    assessed = res.payload["incidents"][0]
+    assert assessed.needs_confirmation is True
+    assert "location" in assessed.uncertain_fields
+    assert assessed.type == IncidentType.medical
+    assert res.traces[0].used_llm is False
+    assert res.traces[0].fallback_used is True
+
+
+def test_p2_t1_scenario_assessment_timeout(monkeypatch):
+    """P2-T1: Scenario assessment runs cleanly with 1-second timeout, falling back safely."""
+    import httpx
+    import openai
+    from unittest.mock import MagicMock
+    from backend.services.llm import LLMClient
+
+    monkeypatch.setenv("LLM_ENABLED", "true")
+    monkeypatch.setenv("XAI_API_KEY", "test-key")
+    monkeypatch.setenv("LLM_TIMEOUT_SECONDS", "1")
+
+    def mock_create(*args, **kwargs):
+        raise openai.APITimeoutError(request=httpx.Request("POST", "https://api.x.ai/v1/chat/completions"))
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.side_effect = mock_create
+    monkeypatch.setattr(openai, "OpenAI", lambda *args, **kwargs: mock_client)
+
+    client = LLMClient()
+    agent = AssessmentSubAgent(llm_client=client)
+
+    state10 = _make_empty_state(clock_min=10)
+    res = agent.run(
+        state10,
+        TriggerContext(
+            kind=TriggerKind.new_incident,
+            payload={"free_text": "commercial warehouse fire near Shivajinagar Depot, multiple trapped", "incident_id": "I2"},
+        ),
+    )
+    assessed = res.payload["incidents"][0]
+    assert assessed.type == IncidentType.fire
+    assert assessed.location.label == "Shivajinagar Depot"
+    assert res.traces[0].used_llm is False
+    assert res.traces[0].fallback_used is True
+
+
