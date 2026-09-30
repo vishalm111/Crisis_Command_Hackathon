@@ -64,7 +64,7 @@ export default function IncidentCards({
   const [escalatingId, setEscalatingId] = useState(null);
   const [escalateError, setEscalateError] = useState(null);
 
-  const baseUrl = apiUrl || (typeof window !== 'undefined' && window.__VITE_API_URL__) || 'http://localhost:8000';
+  const baseUrl = apiUrl || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:8000';
 
   // Use provided incidents prop or fall back to mock data
   const incidentList = incidents !== null ? incidents : mockIncidents;

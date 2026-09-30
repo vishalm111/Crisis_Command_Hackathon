@@ -34,7 +34,7 @@ export default function AddIncidentForm({
   // Free-text form state
   const [freeText, setFreeText] = useState('');
 
-  const baseUrl = apiUrl || (typeof window !== 'undefined' && window.__VITE_API_URL__) || 'http://localhost:8000';
+  const baseUrl = apiUrl || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:8000';
 
   const resetForm = () => {
     setDescription('');
