@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pydantic>=2
+python-dotenv
+openai          # xAI's API is OpenAI-compatible: OpenAI(base_url=XAI_BASE_URL, api_key=XAI_API_KEY)
+langgraph       # optional; workflow.py falls back to a sequential runner if import fails
+httpx
+pytest
