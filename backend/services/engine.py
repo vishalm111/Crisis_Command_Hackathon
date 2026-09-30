@@ -29,6 +29,7 @@ class SimulationEngine:
             self.seed_path = Path(__file__).resolve().parent.parent.parent / "contracts" / "mock_state.json"
         else:
             self.seed_path = seed_path
+        self._approval_history: dict[str, ApprovalStatus] = {}
         self._state: CrisisState = self._load_initial_state()
 
     def _load_initial_state(self) -> CrisisState:
@@ -50,8 +51,17 @@ class SimulationEngine:
 
     def reset(self) -> CrisisState:
         """Resets the simulation to the initial seed state. Idempotent."""
+        self._approval_history.clear()
         self._state = self._load_initial_state()
         return self._state
+
+    def record_approval_decision(self, approval_id: str, status: ApprovalStatus) -> None:
+        """Records the decision on an approval request for idempotency/conflict detection."""
+        self._approval_history[approval_id] = status
+
+    def get_approval_decision(self, approval_id: str) -> Optional[ApprovalStatus]:
+        """Returns the past decision for an approval request, if any."""
+        return self._approval_history.get(approval_id)
 
     def snapshot(self) -> CrisisState:
         """Returns a deep copy of the current state for What-If scenario simulations.

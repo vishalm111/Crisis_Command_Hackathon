@@ -15,80 +15,19 @@ from backend.models.domain import (
     Plan,
     PlanDiff,
     TraceEntry,
+    Unmet,
 )
-from backend.models.enums import AlertLevel, Tier, TriggerKind
+from backend.models.enums import AlertLevel, ResourceType, Tier, TriggerKind
 from backend.orchestrator.workflow import run_flow
 from backend.services.engine import SimulationEngine, get_engine
 from backend.subagents.base import TriggerContext
 
 
-def diff_plans(old_plan: Plan, new_plan: Plan) -> PlanDiff:
-    """Computes differences between two plans."""
-    changes: List[DiffChange] = []
-    old_by_res = {asg.resource_id: asg for asg in old_plan.assignments}
-    new_by_res = {asg.resource_id: asg for asg in new_plan.assignments}
-
-    all_resources = set(old_by_res.keys()).union(new_by_res.keys())
-
-    for res_id in sorted(all_resources):
-        old_asg = old_by_res.get(res_id)
-        new_asg = new_by_res.get(res_id)
-
-        if old_asg and not new_asg:
-            changes.append(
-                DiffChange(
-                    resource_id=res_id,
-                    kind=DiffChangeKind.removed,
-                    old_incident_id=old_asg.incident_id,
-                    new_incident_id=None,
-                    old_eta_min=old_asg.eta_min,
-                    new_eta_min=None,
-                    reason=f"Unit {res_id} removed from incident {old_asg.incident_id}",
-                )
-            )
-        elif not old_asg and new_asg:
-            changes.append(
-                DiffChange(
-                    resource_id=res_id,
-                    kind=DiffChangeKind.added,
-                    old_incident_id=None,
-                    new_incident_id=new_asg.incident_id,
-                    old_eta_min=None,
-                    new_eta_min=new_asg.eta_min,
-                    reason=new_asg.reason or f"Unit {res_id} dispatched to incident {new_asg.incident_id}",
-                )
-            )
-        elif old_asg and new_asg:
-            if old_asg.incident_id != new_asg.incident_id:
-                changes.append(
-                    DiffChange(
-                        resource_id=res_id,
-                        kind=DiffChangeKind.reassigned,
-                        old_incident_id=old_asg.incident_id,
-                        new_incident_id=new_asg.incident_id,
-                        old_eta_min=old_asg.eta_min,
-                        new_eta_min=new_asg.eta_min,
-                        reason=new_asg.reason or f"Unit {res_id} reassigned from {old_asg.incident_id} to {new_asg.incident_id}",
-                    )
-                )
-            elif abs(old_asg.eta_min - new_asg.eta_min) >= 1.0:
-                changes.append(
-                    DiffChange(
-                        resource_id=res_id,
-                        kind=DiffChangeKind.eta_changed,
-                        old_incident_id=old_asg.incident_id,
-                        new_incident_id=new_asg.incident_id,
-                        old_eta_min=old_asg.eta_min,
-                        new_eta_min=new_asg.eta_min,
-                        reason=f"ETA changed for {res_id} on {old_asg.incident_id}",
-                    )
-                )
-
-    return PlanDiff(
-        from_version=old_plan.version,
-        to_version=new_plan.version,
-        changes=changes,
-    )
+from backend.orchestrator.approval_gate import (
+    GateDecision,
+    diff_plans,
+    evaluate,
+)
 
 
 def evaluate_approval_gate(
@@ -96,78 +35,211 @@ def evaluate_approval_gate(
     proposed_plan: Plan,
     state: CrisisState,
 ) -> Tuple[bool, List[str], List[str], PlanDiff]:
-    """Evaluates Contract Section 8 approval gate rules.
-    
-    A proposed plan needs human approval if any of these hold:
-    1. Preempts a resource from an incident with severity 4 or 5.
-    2. Leaves a critical tier incident with any unmet slot.
-    3. Changes 3 or more assignments compared with current plan.
-    4. Includes an incident with needs_confirmation = true that would receive resources.
+    """Evaluates Contract Section 8 approval gate rules via approval_gate.evaluate()."""
+    decision = evaluate(current_plan, proposed_plan, state)
+    return (
+        decision.required,
+        decision.reasons,
+        decision.consequences,
+        decision.diff or diff_plans(current_plan, proposed_plan),
+    )
+
+
+def detect_and_resolve_conflicts(plan: Plan, state: CrisisState) -> Tuple[Plan, List[TraceEntry]]:
+    """Detects and resolves plan conflicts per P1-A1 specification:
+    1. A resource in two assignments (double-booking).
+    2. A locked or approved assignment changed.
+    3. A resource assigned while unavailable.
+    4. An incident over-allocated.
+
+    Resolution hierarchy:
+    - Locked or approved always win.
+    - Higher-priority incident wins.
+    - Tie-break: earlier reported_at_min, then incident ID.
+    - Every resolution records a TraceEntry.
     """
-    reasons: List[str] = []
-    consequences: List[str] = []
-    diff = diff_plans(current_plan, proposed_plan)
+    traces: List[TraceEntry] = []
+    clean_plan = plan.model_copy(deep=True)
+    assignments = clean_plan.assignments
 
-    # If no changes were proposed compared with current plan, approval is not needed
-    if len(diff.changes) == 0:
-        return False, [], [], diff
-
+    resource_map = {r.id: r for r in state.resources}
     incident_map = {inc.id: inc for inc in state.incidents}
+    constraint_map = {c.resource_id: c for c in state.constraints}
 
-    # Rule 1: Preemption from severity 4 or 5
-    for change in diff.changes:
-        if change.kind == DiffChangeKind.reassigned and change.old_incident_id:
-            old_inc = incident_map.get(change.old_incident_id)
-            if old_inc and old_inc.severity in (4, 5):
-                reasons.append(
-                    f"Preempts resource {change.resource_id} from Incident {change.old_incident_id} "
-                    f"which has high severity (severity {old_inc.severity})."
+    # 1. Resolve unavailable resource assignments
+    valid_status_assignments: List[Assignment] = []
+    for asg in assignments:
+        res = resource_map.get(asg.resource_id)
+        if res and res.status.value == "unavailable":
+            traces.append(
+                TraceEntry(
+                    agent="orchestrator",
+                    step="resolve_conflict",
+                    detail=f"Removed unavailable resource {asg.resource_id} from incident {asg.incident_id}.",
+                    used_llm=False,
+                    fallback_used=False,
+                    at_min=state.clock_min,
                 )
-                consequences.append(
-                    f"Incident {change.old_incident_id} loses unit {change.resource_id} and risks coverage degradation."
+            )
+        else:
+            valid_status_assignments.append(asg)
+    assignments = valid_status_assignments
+
+    # 2. Enforce locked / approved constraints
+    enforced_assignments: List[Assignment] = []
+    for asg in assignments:
+        constraint = constraint_map.get(asg.resource_id)
+        if constraint and constraint.incident_id != asg.incident_id:
+            # Overriding a locked/approved constraint is forbidden
+            traces.append(
+                TraceEntry(
+                    agent="orchestrator",
+                    step="resolve_conflict",
+                    detail=(
+                        f"Assignment conflict: resource {asg.resource_id} has {constraint.kind.value} "
+                        f"constraint to {constraint.incident_id}. Canceled conflicting move to {asg.incident_id}."
+                    ),
+                    used_llm=False,
+                    fallback_used=False,
+                    at_min=state.clock_min,
                 )
-
-    # Rule 2: Leaves a critical tier incident with any unmet slot
-    for unmet in proposed_plan.unmet:
-        inc = incident_map.get(unmet.incident_id)
-        if inc and inc.tier == Tier.critical and any(c > 0 for c in unmet.missing.values()):
-            reasons.append(
-                f"Proposed plan leaves critical incident {unmet.incident_id} with unmet resource slots."
             )
-            consequences.append(
-                f"Critical emergency at {unmet.incident_id} remains without required responder units."
-            )
+            # Revert to constrained incident
+            asg.incident_id = constraint.incident_id
+            if constraint.kind.value == "locked":
+                asg.locked = True
+            elif constraint.kind.value == "approved":
+                asg.approved = True
+        enforced_assignments.append(asg)
+    assignments = enforced_assignments
 
-    # Rule 3: Changes 3 or more assignments
-    if len(diff.changes) >= 3:
-        reasons.append(
-            f"Proposed plan introduces major operational disruption with {len(diff.changes)} assignment changes."
+    # 3. Resolve double-booking (a resource in multiple assignments)
+    by_resource: Dict[str, List[Assignment]] = {}
+    for asg in assignments:
+        by_resource.setdefault(asg.resource_id, []).append(asg)
+
+    resolved_single_assignments: List[Assignment] = []
+    for res_id, asg_list in by_resource.items():
+        if len(asg_list) == 1:
+            resolved_single_assignments.append(asg_list[0])
+            continue
+
+        # Multiple assignments for same resource: choose winner
+        def candidate_key(a: Assignment):
+            is_locked_approved = 1 if (a.locked or a.approved) else 0
+            inc = incident_map.get(a.incident_id)
+            priority = inc.priority if inc else 0.0
+            reported = inc.reported_at_min if inc else 0
+            inc_id = inc.id if inc else ""
+            return (is_locked_approved, priority, -reported, inc_id)
+
+        sorted_candidates = sorted(asg_list, key=candidate_key, reverse=True)
+        winner = sorted_candidates[0]
+        resolved_single_assignments.append(winner)
+
+        losers = sorted_candidates[1:]
+        for loser in losers:
+            w_inc = incident_map.get(winner.incident_id)
+            l_inc = incident_map.get(loser.incident_id)
+            w_pri = w_inc.priority if w_inc else 0.0
+            l_pri = l_inc.priority if l_inc else 0.0
+            traces.append(
+                TraceEntry(
+                    agent="orchestrator",
+                    step="resolve_conflict",
+                    detail=(
+                        f"Resolved double-booking for {res_id}: {winner.incident_id} (priority {w_pri:.1f}) "
+                        f"won over {loser.incident_id} (priority {l_pri:.1f})."
+                    ),
+                    used_llm=False,
+                    fallback_used=False,
+                    at_min=state.clock_min,
+                )
+            )
+    assignments = resolved_single_assignments
+
+    # 4. Resolve over-allocated incidents
+    # For each incident and resource type, ensure assigned_count <= required_count
+    final_assignments: List[Assignment] = []
+    by_incident: Dict[str, List[Assignment]] = {}
+    for asg in assignments:
+        by_incident.setdefault(asg.incident_id, []).append(asg)
+
+    for inc_id, asg_list in by_incident.items():
+        inc = incident_map.get(inc_id)
+        if not inc:
+            final_assignments.extend(asg_list)
+            continue
+
+        # Group by resource type
+        by_type: Dict[ResourceType, List[Assignment]] = {}
+        for a in asg_list:
+            res = resource_map.get(a.resource_id)
+            if res:
+                by_type.setdefault(res.type, []).append(a)
+            else:
+                final_assignments.append(a)
+
+        for res_type, type_asgs in by_type.items():
+            req_count = inc.required.get(res_type, 0)
+            if len(type_asgs) <= req_count:
+                final_assignments.extend(type_asgs)
+            else:
+                # Keep locked/approved first, then lowest ETA
+                sorted_type = sorted(
+                    type_asgs,
+                    key=lambda a: (1 if (a.locked or a.approved) else 0, -a.eta_min),
+                    reverse=True,
+                )
+                kept = sorted_type[:req_count]
+                discarded = sorted_type[req_count:]
+                final_assignments.extend(kept)
+
+                for disc in discarded:
+                    traces.append(
+                        TraceEntry(
+                            agent="orchestrator",
+                            step="resolve_conflict",
+                            detail=(
+                                f"Resolved over-allocation for {inc_id}: removed excess "
+                                f"{disc.resource_id} ({res_type.value}, req: {req_count})."
+                            ),
+                            used_llm=False,
+                            fallback_used=False,
+                            at_min=state.clock_min,
+                        )
+                    )
+
+    clean_plan.assignments = final_assignments
+
+    # Recalculate unmet slots based on resolved assignments
+    unmet_list: List[Unmet] = []
+    for inc in state.incidents:
+        if inc.needs_confirmation:
+            continue
+        inc_asgs = [a for a in final_assignments if a.incident_id == inc.id]
+        missing_dict: Dict[ResourceType, int] = {}
+        for r_type, needed in inc.required.items():
+            assigned_of_type = sum(
+                1 for a in inc_asgs if resource_map.get(a.resource_id) and resource_map[a.resource_id].type == r_type
+            )
+            if assigned_of_type < needed:
+                missing_dict[r_type] = needed - assigned_of_type
+        if missing_dict:
+            unmet_list.append(Unmet(incident_id=inc.id, missing=missing_dict))
+    clean_plan.unmet = unmet_list
+
+    # Recalculate metrics
+    if clean_plan.assignments:
+        clean_plan.metrics.avg_eta_min = round(
+            sum(a.eta_min for a in clean_plan.assignments) / len(clean_plan.assignments), 1
         )
-        consequences.append(
-            f"Reorganizes {len(diff.changes)} units simultaneously across active sectors."
+        clean_plan.metrics.max_eta_min = round(
+            max(a.eta_min for a in clean_plan.assignments), 1
         )
+    clean_plan.metrics.unresolved_count = len(clean_plan.unmet)
 
-    # Rule 4: Incident with needs_confirmation=True receives resources
-    for asg in proposed_plan.assignments:
-        inc = incident_map.get(asg.incident_id)
-        if inc and inc.needs_confirmation:
-            reasons.append(
-                f"Proposed plan dispatches {asg.resource_id} to Incident {asg.incident_id}, "
-                f"which has unconfirmed/uncertain intake data."
-            )
-            consequences.append(
-                f"Responder {asg.resource_id} will be committed to an unverified incident location."
-            )
-
-    # Add general consequence for added units
-    for change in diff.changes:
-        if change.kind in (DiffChangeKind.added, DiffChangeKind.reassigned) and change.new_incident_id:
-            consequences.append(
-                f"Incident {change.new_incident_id} receives responder {change.resource_id} (ETA {change.new_eta_min:.1f}m)."
-            )
-
-    needs_approval = len(reasons) > 0
-    return needs_approval, reasons, consequences, diff
+    return clean_plan, traces
 
 
 class Orchestrator:
@@ -234,20 +306,25 @@ class Orchestrator:
             if "assignments" in payload and isinstance(payload["assignments"], list):
                 new_plan.assignments = payload["assignments"]
 
-            # Evaluate approval gate
-            needs_approval, reasons, consequences, diff = evaluate_approval_gate(
+            # Conflict Detection and Plan Merge (P1-A1)
+            new_plan, conflict_traces = detect_and_resolve_conflicts(new_plan, self.engine.get_state())
+            for ct in conflict_traces:
+                self.engine.add_trace(ct)
+
+            # Evaluate approval gate (P1-A2)
+            gate_decision = evaluate(
                 current_state.current_plan, new_plan, self.engine.get_state()
             )
 
-            if needs_approval:
+            if gate_decision.required:
                 # Set proposed plan and raise ApprovalRequest
                 approval_req = ApprovalRequest(
                     id=f"appr_{self.engine.get_state().clock_min}_{new_plan.version}",
                     status=ApprovalStatus.pending,
-                    reasons=reasons,
-                    consequences=consequences,
+                    reasons=gate_decision.reasons,
+                    consequences=gate_decision.consequences,
                     proposed_plan=new_plan,
-                    diff=diff,
+                    diff=gate_decision.diff or diff_plans(current_state.current_plan, new_plan),
                     created_at_min=self.engine.get_state().clock_min,
                 )
                 self.engine.set_proposed_plan(new_plan)
