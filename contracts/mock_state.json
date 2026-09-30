@@ -1,0 +1,682 @@
+{
+  "clock_min": 20,
+  "incidents": [
+    {
+      "id": "I1",
+      "type": "medical",
+      "severity": 3,
+      "description": "Medical emergency: elderly patient with chest pain",
+      "location": {
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "label": "MG Road Metro"
+      },
+      "people_affected": 2,
+      "required": {
+        "ambulance": 1
+      },
+      "status": "assigned",
+      "reported_at_min": 0,
+      "priority": 49.5,
+      "tier": "medium",
+      "uncertain_fields": [],
+      "needs_confirmation": false,
+      "source": "structured"
+    },
+    {
+      "id": "I2",
+      "type": "fire",
+      "severity": 4,
+      "description": "Commercial warehouse fire with hazardous fumes",
+      "location": {
+        "lat": 12.965,
+        "lng": 77.6,
+        "label": "Shivajinagar Depot"
+      },
+      "people_affected": 6,
+      "required": {
+        "fire_engine": 1,
+        "ambulance": 1
+      },
+      "status": "assigned",
+      "reported_at_min": 5,
+      "priority": 63.5,
+      "tier": "high",
+      "uncertain_fields": [],
+      "needs_confirmation": false,
+      "source": "structured"
+    },
+    {
+      "id": "I3",
+      "type": "medical",
+      "severity": 2,
+      "description": "Unconfirmed collapse report near Richmond flyover",
+      "location": {
+        "lat": 12.961,
+        "lng": 77.597,
+        "label": "Richmond Circle Flyover"
+      },
+      "people_affected": 1,
+      "required": {
+        "ambulance": 1
+      },
+      "status": "new",
+      "reported_at_min": 10,
+      "priority": 28.0,
+      "tier": "low",
+      "uncertain_fields": [
+        "location",
+        "severity"
+      ],
+      "needs_confirmation": true,
+      "source": "free_text"
+    },
+    {
+      "id": "I4",
+      "type": "rescue",
+      "severity": 5,
+      "description": "Commercial complex structural collapse with trapped occupants",
+      "location": {
+        "lat": 12.975,
+        "lng": 77.605,
+        "label": "Brigade Towers"
+      },
+      "people_affected": 20,
+      "required": {
+        "rescue_team": 1,
+        "ambulance": 2,
+        "fire_engine": 1
+      },
+      "status": "assigned",
+      "reported_at_min": 15,
+      "priority": 72.5,
+      "tier": "critical",
+      "uncertain_fields": [],
+      "needs_confirmation": false,
+      "source": "structured"
+    }
+  ],
+  "resources": [
+    {
+      "id": "A1",
+      "type": "ambulance",
+      "name": "Ambulance Alpha-1",
+      "base": {
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "label": "Station Central"
+      },
+      "location": {
+        "lat": 12.973,
+        "lng": 77.598,
+        "label": null
+      },
+      "status": "en_route",
+      "assigned_incident_id": "I4"
+    },
+    {
+      "id": "A2",
+      "type": "ambulance",
+      "name": "Ambulance Alpha-2",
+      "base": {
+        "lat": 12.965,
+        "lng": 77.6,
+        "label": "Station East"
+      },
+      "location": {
+        "lat": 12.966,
+        "lng": 77.601,
+        "label": null
+      },
+      "status": "en_route",
+      "assigned_incident_id": "I2"
+    },
+    {
+      "id": "A3",
+      "type": "ambulance",
+      "name": "Ambulance Alpha-3",
+      "base": {
+        "lat": 12.98,
+        "lng": 77.59,
+        "label": "Station North"
+      },
+      "location": {
+        "lat": 12.978,
+        "lng": 77.592,
+        "label": null
+      },
+      "status": "unavailable",
+      "assigned_incident_id": null
+    },
+    {
+      "id": "F1",
+      "type": "fire_engine",
+      "name": "Fire Engine Foxtrot-1",
+      "base": {
+        "lat": 12.978,
+        "lng": 77.61,
+        "label": "Fire Station 1"
+      },
+      "location": {
+        "lat": 12.978,
+        "lng": 77.61,
+        "label": null
+      },
+      "status": "available",
+      "assigned_incident_id": null
+    },
+    {
+      "id": "F2",
+      "type": "fire_engine",
+      "name": "Fire Engine Foxtrot-2",
+      "base": {
+        "lat": 12.96,
+        "lng": 77.585,
+        "label": "Fire Station 2"
+      },
+      "location": {
+        "lat": 12.964,
+        "lng": 77.589,
+        "label": null
+      },
+      "status": "en_route",
+      "assigned_incident_id": "I4"
+    },
+    {
+      "id": "R1",
+      "type": "rescue_team",
+      "name": "Rescue Team Romeo-1",
+      "base": {
+        "lat": 12.972,
+        "lng": 77.58,
+        "label": "Disaster HQ"
+      },
+      "location": {
+        "lat": 12.974,
+        "lng": 77.59,
+        "label": null
+      },
+      "status": "en_route",
+      "assigned_incident_id": "I4"
+    }
+  ],
+  "facilities": [
+    {
+      "id": "H1",
+      "kind": "hospital",
+      "name": "Victoria General Hospital",
+      "location": {
+        "lat": 12.9634,
+        "lng": 77.5746,
+        "label": "Victoria Hospital"
+      },
+      "capacity": 100,
+      "load": 35
+    },
+    {
+      "id": "H2",
+      "kind": "hospital",
+      "name": "Bowring & Lady Curzon Hospital",
+      "location": {
+        "lat": 12.983,
+        "lng": 77.605,
+        "label": "Bowring Hospital"
+      },
+      "capacity": 80,
+      "load": 22
+    },
+    {
+      "id": "S1",
+      "kind": "shelter",
+      "name": "Cubbon Emergency Shelter",
+      "location": {
+        "lat": 12.976,
+        "lng": 77.592,
+        "label": "Cubbon Pavilion"
+      },
+      "capacity": 200,
+      "load": 15
+    }
+  ],
+  "current_plan": {
+    "id": "plan_3",
+    "version": 3,
+    "assignments": [
+      {
+        "id": "asg_1",
+        "resource_id": "A1",
+        "incident_id": "I4",
+        "eta_min": 7.2,
+        "distance_km": 3.5,
+        "facility_id": "H1",
+        "locked": false,
+        "approved": false,
+        "reason": "Preempted from I1 to critical incident I4"
+      },
+      {
+        "id": "asg_2",
+        "resource_id": "A2",
+        "incident_id": "I2",
+        "eta_min": 5.4,
+        "distance_km": 2.4,
+        "facility_id": "H2",
+        "locked": false,
+        "approved": false,
+        "reason": "Dispatched to warehouse fire incident I2"
+      },
+      {
+        "id": "asg_3",
+        "resource_id": "F2",
+        "incident_id": "I4",
+        "eta_min": 8.1,
+        "distance_km": 4.1,
+        "facility_id": null,
+        "locked": false,
+        "approved": false,
+        "reason": "Dispatched structural fire engine to I4 collapse"
+      },
+      {
+        "id": "asg_4",
+        "resource_id": "R1",
+        "incident_id": "I4",
+        "eta_min": 6.8,
+        "distance_km": 3.1,
+        "facility_id": null,
+        "locked": false,
+        "approved": false,
+        "reason": "Specialized search and rescue team to I4"
+      }
+    ],
+    "unmet": [
+      {
+        "incident_id": "I1",
+        "missing": {
+          "ambulance": 1
+        }
+      },
+      {
+        "incident_id": "I4",
+        "missing": {
+          "ambulance": 1
+        }
+      }
+    ],
+    "metrics": {
+      "avg_eta_min": 6.88,
+      "max_eta_min": 8.1,
+      "coverage_pct": 66.7,
+      "utilization_pct": 80.0,
+      "unresolved_count": 2
+    }
+  },
+  "proposed_plan": {
+    "id": "plan_4",
+    "version": 4,
+    "assignments": [
+      {
+        "id": "asg_1",
+        "resource_id": "A1",
+        "incident_id": "I4",
+        "eta_min": 7.2,
+        "distance_km": 3.5,
+        "facility_id": "H1",
+        "locked": false,
+        "approved": false,
+        "reason": "Preempted from I1 to critical incident I4"
+      },
+      {
+        "id": "asg_2_p",
+        "resource_id": "A2",
+        "incident_id": "I4",
+        "eta_min": 9.3,
+        "distance_km": 4.8,
+        "facility_id": "H2",
+        "locked": false,
+        "approved": true,
+        "reason": "Preempted from I2 to replace failed A3 on critical incident I4"
+      },
+      {
+        "id": "asg_3",
+        "resource_id": "F2",
+        "incident_id": "I4",
+        "eta_min": 8.1,
+        "distance_km": 4.1,
+        "facility_id": null,
+        "locked": false,
+        "approved": false,
+        "reason": "Dispatched structural fire engine to I4 collapse"
+      },
+      {
+        "id": "asg_4",
+        "resource_id": "R1",
+        "incident_id": "I4",
+        "eta_min": 6.8,
+        "distance_km": 3.1,
+        "facility_id": null,
+        "locked": false,
+        "approved": false,
+        "reason": "Specialized search and rescue team to I4"
+      }
+    ],
+    "unmet": [
+      {
+        "incident_id": "I1",
+        "missing": {
+          "ambulance": 1
+        }
+      },
+      {
+        "incident_id": "I2",
+        "missing": {
+          "ambulance": 1
+        }
+      }
+    ],
+    "metrics": {
+      "avg_eta_min": 7.85,
+      "max_eta_min": 9.3,
+      "coverage_pct": 66.7,
+      "utilization_pct": 80.0,
+      "unresolved_count": 2
+    }
+  },
+  "approval": {
+    "id": "appr_1",
+    "status": "pending",
+    "reasons": [
+      "Preempts ambulance A2 from Incident I2 which has high severity (severity 4).",
+      "Leaves Incident I2 with unmet ambulance coverage."
+    ],
+    "consequences": [
+      "Incident I2 loses ambulance A2 and becomes unmet.",
+      "Incident I4 receives ambulance A2 (ETA 9.3 min) to restore emergency medical coverage."
+    ],
+    "proposed_plan": {
+      "id": "plan_4",
+      "version": 4,
+      "assignments": [
+        {
+          "id": "asg_1",
+          "resource_id": "A1",
+          "incident_id": "I4",
+          "eta_min": 7.2,
+          "distance_km": 3.5,
+          "facility_id": "H1",
+          "locked": false,
+          "approved": false,
+          "reason": "Preempted from I1 to critical incident I4"
+        },
+        {
+          "id": "asg_2_p",
+          "resource_id": "A2",
+          "incident_id": "I4",
+          "eta_min": 9.3,
+          "distance_km": 4.8,
+          "facility_id": "H2",
+          "locked": false,
+          "approved": true,
+          "reason": "Preempted from I2 to replace failed A3 on critical incident I4"
+        },
+        {
+          "id": "asg_3",
+          "resource_id": "F2",
+          "incident_id": "I4",
+          "eta_min": 8.1,
+          "distance_km": 4.1,
+          "facility_id": null,
+          "locked": false,
+          "approved": false,
+          "reason": "Dispatched structural fire engine to I4 collapse"
+        },
+        {
+          "id": "asg_4",
+          "resource_id": "R1",
+          "incident_id": "I4",
+          "eta_min": 6.8,
+          "distance_km": 3.1,
+          "facility_id": null,
+          "locked": false,
+          "approved": false,
+          "reason": "Specialized search and rescue team to I4"
+        }
+      ],
+      "unmet": [
+        {
+          "incident_id": "I1",
+          "missing": {
+            "ambulance": 1
+          }
+        },
+        {
+          "incident_id": "I2",
+          "missing": {
+            "ambulance": 1
+          }
+        }
+      ],
+      "metrics": {
+        "avg_eta_min": 7.85,
+        "max_eta_min": 9.3,
+        "coverage_pct": 66.7,
+        "utilization_pct": 80.0,
+        "unresolved_count": 2
+      }
+    },
+    "diff": {
+      "from_version": 3,
+      "to_version": 4,
+      "changes": [
+        {
+          "resource_id": "A2",
+          "kind": "reassigned",
+          "old_incident_id": "I2",
+          "new_incident_id": "I4",
+          "old_eta_min": 5.4,
+          "new_eta_min": 9.3,
+          "reason": "Preempted from I2 to replace failed A3 on critical incident I4"
+        }
+      ]
+    },
+    "created_at_min": 20
+  },
+  "plan_history": [
+    {
+      "id": "plan_1",
+      "version": 1,
+      "assignments": [
+        {
+          "id": "asg_init_1",
+          "resource_id": "A1",
+          "incident_id": "I1",
+          "eta_min": 6.2,
+          "distance_km": 2.8,
+          "facility_id": "H1",
+          "locked": false,
+          "approved": false,
+          "reason": "Nearest available ambulance to I1"
+        }
+      ],
+      "unmet": [],
+      "metrics": {
+        "avg_eta_min": 6.2,
+        "max_eta_min": 6.2,
+        "coverage_pct": 100.0,
+        "utilization_pct": 16.7,
+        "unresolved_count": 0
+      }
+    },
+    {
+      "id": "plan_2",
+      "version": 2,
+      "assignments": [
+        {
+          "id": "asg_init_1",
+          "resource_id": "A1",
+          "incident_id": "I1",
+          "eta_min": 6.2,
+          "distance_km": 2.8,
+          "facility_id": "H1",
+          "locked": false,
+          "approved": false,
+          "reason": "Assigned to I1"
+        },
+        {
+          "id": "asg_2",
+          "resource_id": "A2",
+          "incident_id": "I2",
+          "eta_min": 5.4,
+          "distance_km": 2.4,
+          "facility_id": "H2",
+          "locked": false,
+          "approved": false,
+          "reason": "Dispatched to I2"
+        },
+        {
+          "id": "asg_init_f1",
+          "resource_id": "F1",
+          "incident_id": "I2",
+          "eta_min": 4.5,
+          "distance_km": 2.1,
+          "facility_id": null,
+          "locked": false,
+          "approved": false,
+          "reason": "Dispatched to I2"
+        }
+      ],
+      "unmet": [],
+      "metrics": {
+        "avg_eta_min": 5.37,
+        "max_eta_min": 6.2,
+        "coverage_pct": 100.0,
+        "utilization_pct": 50.0,
+        "unresolved_count": 0
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "resource_id": "A1",
+      "incident_id": "I4",
+      "kind": "locked"
+    }
+  ],
+  "traces": [
+    {
+      "agent": "assessment",
+      "step": "score_incidents",
+      "detail": "Scored incident I1 (medical, sev 3): priority 49.5, tier medium.",
+      "used_llm": false,
+      "fallback_used": false,
+      "at_min": 0
+    },
+    {
+      "agent": "allocation",
+      "step": "assign_units",
+      "detail": "Assigned A1 to I1 (ETA 6.2m) as nearest available unit.",
+      "used_llm": false,
+      "fallback_used": false,
+      "at_min": 0
+    },
+    {
+      "agent": "assessment",
+      "step": "parse_incident",
+      "detail": "Parsed free-text report: marked location uncertain, needs_confirmation=true.",
+      "used_llm": false,
+      "fallback_used": true,
+      "at_min": 10
+    },
+    {
+      "agent": "allocation",
+      "step": "preemption_evaluation",
+      "detail": "Evaluated preemption for I4: took A1 from I1 (priority 72.5 vs 49.5, diff >= 8).",
+      "used_llm": false,
+      "fallback_used": false,
+      "at_min": 15
+    },
+    {
+      "agent": "impact_detector",
+      "step": "detect_failure_impact",
+      "detail": "Identified failure of A3 on active assignment to I4.",
+      "used_llm": false,
+      "fallback_used": false,
+      "at_min": 20
+    },
+    {
+      "agent": "approval_gate",
+      "step": "gate_evaluation",
+      "detail": "Approval required: proposed preemption of A2 from severity 4 incident I2.",
+      "used_llm": false,
+      "fallback_used": false,
+      "at_min": 20
+    }
+  ],
+  "explanations": [
+    {
+      "id": "exp_1",
+      "trigger": "new_incident",
+      "bullets": [
+        "Dispatched nearest available units to initial emergencies I1 and I2.",
+        "Maintained standby capacity at Station 1."
+      ],
+      "trace_refs": [
+        0,
+        1
+      ]
+    },
+    {
+      "id": "exp_2",
+      "trigger": "resource_failure",
+      "bullets": [
+        "Ambulance A3 experienced mechanical failure en route to I4.",
+        "Allocation engine evaluated preemption of A2 from I2 (priority gap 9.0).",
+        "High-severity preemption triggered human approval gate."
+      ],
+      "trace_refs": [
+        4,
+        5
+      ]
+    }
+  ],
+  "alerts": [
+    {
+      "id": "alt_1",
+      "level": "info",
+      "text": "Simulation clock initialized at t=0 min.",
+      "at_min": 0
+    },
+    {
+      "id": "alt_2",
+      "level": "warning",
+      "text": "Incident I3 reported with vague location - human verification requested.",
+      "at_min": 10
+    },
+    {
+      "id": "alt_3",
+      "level": "critical",
+      "text": "Ambulance A3 failed en route to Incident I4. Critical medical coverage impacted.",
+      "at_min": 20
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg_1",
+      "agent": "Orchestrator",
+      "text": "Crisis Command simulation initialized at t=0 min.",
+      "at_min": 0
+    },
+    {
+      "id": "msg_2",
+      "agent": "ImpactDetector",
+      "text": "Alert: Resource A3 status changed to unavailable while assigned to I4.",
+      "at_min": 20
+    }
+  ],
+  "event_log": [
+    "t=0: Dispatched A1 to I1",
+    "t=5: Dispatched A2, F1 to I2",
+    "t=10: Received vague report for I3; marked needs_confirmation",
+    "t=15: I4 reported; preempted A1 from I1 to I4; dispatched F2, R1 to I4",
+    "t=20: Resource failure A3; proposed plan 4 generated; approval requested"
+  ],
+  "llm_status": "disabled"
+}

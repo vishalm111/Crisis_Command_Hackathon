@@ -263,3 +263,61 @@ def test_api_models():
         payload={"resource_id": "F2"},
     )
     assert whatif_req.kind == TriggerKind.resource_failure
+
+
+def test_mock_state_valid():
+    from pathlib import Path
+
+    mock_state_path = Path("contracts/mock_state.json")
+    assert mock_state_path.exists(), "contracts/mock_state.json must exist"
+
+    with open(mock_state_path, "r", encoding="utf-8") as f:
+        data = f.read()
+
+    state = CrisisState.model_validate_json(data)
+    assert state.clock_min == 20
+
+    # 3 to 4 incidents including one needs_confirmation
+    assert len(state.incidents) >= 3
+    has_needs_confirmation = any(inc.needs_confirmation for inc in state.incidents)
+    assert has_needs_confirmation, "Must include at least one incident with needs_confirmation=True"
+
+    # All seed resources (A1, A2, A3, F1, F2, R1)
+    resource_ids = {r.id for r in state.resources}
+    expected_resources = {"A1", "A2", "A3", "F1", "F2", "R1"}
+    assert expected_resources.issubset(resource_ids)
+
+    # Current plan with 4 assignments
+    assert len(state.current_plan.assignments) == 4
+
+    # Pending ApprovalRequest with a diff
+    assert state.approval is not None
+    assert state.approval.status == ApprovalStatus.pending
+    assert state.approval.diff is not None
+    assert len(state.approval.diff.changes) > 0
+
+    # 2 explanations, 3 alerts, 6 traces
+    assert len(state.explanations) == 2
+    assert len(state.alerts) == 3
+    assert len(state.traces) == 6
+
+    # Verify ID references exist
+    incident_ids = {inc.id for inc in state.incidents}
+    facility_ids = {fac.id for fac in state.facilities}
+
+    for asg in state.current_plan.assignments:
+        assert asg.resource_id in resource_ids, f"Resource {asg.resource_id} not found"
+        assert asg.incident_id in incident_ids, f"Incident {asg.incident_id} not found"
+        if asg.facility_id:
+            assert asg.facility_id in facility_ids, f"Facility {asg.facility_id} not found"
+
+    for unmet in state.current_plan.unmet:
+        assert unmet.incident_id in incident_ids, f"Unmet incident {unmet.incident_id} not found"
+
+    for change in state.approval.diff.changes:
+        assert change.resource_id in resource_ids
+        if change.old_incident_id:
+            assert change.old_incident_id in incident_ids
+        if change.new_incident_id:
+            assert change.new_incident_id in incident_ids
+
