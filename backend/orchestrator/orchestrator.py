@@ -254,6 +254,9 @@ class Orchestrator:
 
     def handle(self, ctx: TriggerContext) -> CrisisState:
         """Handles any crisis trigger and advances the state."""
+        if ctx.kind != TriggerKind.what_if:
+            self.engine.log(f"t={self.engine.get_state().clock_min}: Trigger received: {ctx.kind.value}")
+
         # Special Case 1: What-If simulation
         if ctx.kind == TriggerKind.what_if:
             # Hard rule: What-If runs on a deep snapshot and NEVER mutates live state
@@ -333,8 +336,8 @@ class Orchestrator:
                     f"t={self.engine.get_state().clock_min}: Plan v{new_plan.version} generated; human approval gate triggered"
                 )
             else:
-                # Auto-commit plan
-                self.engine.set_plan(new_plan, archive_current=True)
+                # Auto-commit plan (P1-A4: archive old plan and record diff)
+                self.engine.set_plan(new_plan, archive_current=True, diff=gate_decision.diff)
                 self.engine.set_proposed_plan(None)
                 self.engine.set_approval(None)
                 self.engine.log(

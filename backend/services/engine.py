@@ -10,6 +10,7 @@ from backend.models.domain import (
     Explanation,
     Incident,
     Plan,
+    PlanDiff,
     Resource,
     TraceEntry,
 )
@@ -92,8 +93,10 @@ class SimulationEngine:
         for idx, existing in enumerate(self._state.incidents):
             if existing.id == incident.id:
                 self._state.incidents[idx] = incident
+                self.log(f"t={self._state.clock_min}: Incident {incident.id} updated (status {incident.status.value}, priority {incident.priority:.1f})")
                 return
         self._state.incidents.append(incident)
+        self.log(f"t={self._state.clock_min}: Incident {incident.id} registered ({incident.type.value}, severity {incident.severity})")
 
     def update_resource(self, resource: Resource) -> None:
         """Updates a resource by ID."""
@@ -119,12 +122,32 @@ class SimulationEngine:
                 return
         raise KeyError(f"Resource with id {resource_id} not found")
 
-    def set_plan(self, plan: Plan, archive_current: bool = True) -> None:
-        """Promotes a new plan to current_plan. Optionally archives previous to plan_history."""
+    def set_plan(
+        self,
+        plan: Plan,
+        archive_current: bool = True,
+        diff: Optional[PlanDiff] = None,
+    ) -> None:
+        """Promotes a new plan to current_plan. Archives previous to plan_history and updates latest_diff."""
         if archive_current and self._state.current_plan:
-            self._state.plan_history.append(self._state.current_plan)
+            old_plan = self._state.current_plan
+            self._state.plan_history.append(old_plan)
+            if diff is not None:
+                self._state.latest_diff = diff
+            else:
+                from backend.orchestrator.approval_gate import diff_plans
+                self._state.latest_diff = diff_plans(old_plan, plan)
         self._state.current_plan = plan
         self.log(f"t={self._state.clock_min}: Plan v{plan.version} ({plan.id}) committed as current plan")
+
+    def get_last_plan_diff(self) -> Optional[PlanDiff]:
+        """Returns the PlanDiff between the last two plans, if available."""
+        if self._state.latest_diff:
+            return self._state.latest_diff
+        if self._state.plan_history and self._state.current_plan:
+            from backend.orchestrator.approval_gate import diff_plans
+            return diff_plans(self._state.plan_history[-1], self._state.current_plan)
+        return None
 
     def set_proposed_plan(self, plan: Optional[Plan]) -> None:
         """Sets or clears the proposed plan."""
