@@ -1,3 +1,5 @@
+import logging
+import time
 from typing import Optional
 from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -6,6 +8,8 @@ from fastapi.responses import JSONResponse
 
 from backend.config import get_settings
 from backend.models import (
+    Alert,
+    AlertLevel,
     ApprovalDecisionRequest,
     ApprovalStatus,
     Constraint,
@@ -54,6 +58,9 @@ app.add_middleware(
 )
 
 
+logger = logging.getLogger(__name__)
+
+
 # Standardized error response handler: {"error": str}
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
@@ -70,6 +77,26 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(
         status_code=422,
         content={"error": msg},
+    )
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.error("Unhandled error processing %s: %s", request.url.path, exc, exc_info=True)
+    engine = get_engine()
+    try:
+        alert = Alert(
+            id=f"alt_sys_{int(time.time() * 1000)}",
+            level=AlertLevel.critical,
+            text=f"System error in {request.url.path}: {str(exc)}",
+            at_min=engine.get_state().clock_min,
+        )
+        engine.add_alert(alert)
+    except Exception:
+        pass
+    return JSONResponse(
+        status_code=500,
+        content={"error": f"Internal system error: {str(exc)}"},
     )
 
 
