@@ -13,7 +13,7 @@ from backend.models.domain import (
     Resource,
     TraceEntry,
 )
-from backend.models.enums import LLMStatus, ResourceStatus
+from backend.models.enums import ApprovalStatus, LLMStatus, ResourceStatus
 
 
 class SimulationEngine:
