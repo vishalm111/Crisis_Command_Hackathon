@@ -164,23 +164,29 @@ export default function CommandCenter() {
         /* STANDARD DASHBOARD LAYOUT */
         <main className="flex-1 p-3 grid grid-cols-12 gap-2.5">
           {/* Top Row: Scoreboard + Simulation & Story Controls */}
-          <div className="col-span-12 flex flex-col gap-2.5">
+          <div className="col-span-12 flex flex-col gap-2.5 animate-fade-in-up">
             <CrisisScoreboard state={state} />
             <SimulationControls state={state} onAction={refresh} />
           </div>
 
           {/* Left Column (col-span-12 lg:col-span-3): Incidents, Alerts, Chaos Engineering */}
-          <div className="col-span-12 lg:col-span-3 flex flex-col gap-2.5">
-            <IncidentCards
-              incidents={state?.incidents}
-              onEscalate={handleEscalate}
-            />
-            <AlertsPanel alerts={state?.alerts} />
-            <ChaosMode onAction={refresh} />
+          <div className="col-span-12 lg:col-span-3 flex flex-col gap-2.5 animate-fade-in-up animate-delay-2">
+            <div className="panel-glow rounded-xl">
+              <IncidentCards
+                incidents={state?.incidents}
+                onEscalate={handleEscalate}
+              />
+            </div>
+            <div className="panel-glow rounded-xl">
+              <AlertsPanel alerts={state?.alerts} />
+            </div>
+            <div className="panel-glow rounded-xl">
+              <ChaosMode onAction={refresh} />
+            </div>
           </div>
 
           {/* Center Column (col-span-12 lg:col-span-6): Map, Topology, Replay, Active Plan & Diff */}
-          <div className="col-span-12 lg:col-span-6 flex flex-col gap-2.5">
+          <div className="col-span-12 lg:col-span-6 flex flex-col gap-2.5 animate-fade-in-up animate-delay-3">
             {/* Center Tab Selector */}
             <div className="flex flex-wrap items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-xl p-1 text-xs self-start">
               <button
@@ -222,26 +228,32 @@ export default function CommandCenter() {
             {centerTab === 'topology' && <DependencyGraph state={state} />}
             {centerTab === 'replay' && <DecisionReplay state={state} />}
 
-            <PlanPanel
-              plan={state?.current_plan}
-              incidents={state?.incidents}
-              resources={state?.resources}
-              state={state}
-            />
+            <div className="panel-glow rounded-xl">
+              <PlanPanel
+                plan={state?.current_plan}
+                incidents={state?.incidents}
+                resources={state?.resources}
+                state={state}
+              />
+            </div>
 
-            <PlanDiff
-              diff={state?.latest_diff}
-              state={state}
-            />
+            <div className="panel-glow rounded-xl">
+              <PlanDiff
+                diff={state?.latest_diff}
+                state={state}
+              />
+            </div>
           </div>
 
           {/* Right Column (col-span-12 lg:col-span-3): Approvals, Crisis Brain, Lab, Chat, Telemetry */}
-          <div className="col-span-12 lg:col-span-3 flex flex-col gap-2.5">
-            <ApprovalPanel
-              approval={state?.approval}
-              onApprove={handleApprove}
-              onReject={handleReject}
-            />
+          <div className="col-span-12 lg:col-span-3 flex flex-col gap-2.5 animate-fade-in-up animate-delay-4">
+            <div className="panel-glow rounded-xl">
+              <ApprovalPanel
+                approval={state?.approval}
+                onApprove={handleApprove}
+                onReject={handleReject}
+              />
+            </div>
 
             {/* Right Sub-View Tabs */}
             <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-xl p-1 text-xs">
@@ -279,29 +291,31 @@ export default function CommandCenter() {
 
             {sideTab === 'ops' && (
               <>
-                <ResourceTable state={state} />
-                <AgentChat messages={state?.messages} />
-                <SystemHealth state={state} error={error} />
+                <div className="panel-glow rounded-xl"><ResourceTable state={state} /></div>
+                <div className="panel-glow rounded-xl"><AgentChat messages={state?.messages} /></div>
+                <div className="panel-glow rounded-xl"><SystemHealth state={state} error={error} /></div>
               </>
             )}
 
             {sideTab === 'ai' && (
               <>
-                <CrisisBrain state={state} />
-                <ExplanationLog
-                  explanations={state?.explanations}
-                  traces={state?.traces}
-                  llmStatus={state?.llm_status}
-                />
-                <AgentChat messages={state?.messages} />
+                <div className="panel-glow rounded-xl"><CrisisBrain state={state} /></div>
+                <div className="panel-glow rounded-xl">
+                  <ExplanationLog
+                    explanations={state?.explanations}
+                    traces={state?.traces}
+                    llmStatus={state?.llm_status}
+                  />
+                </div>
+                <div className="panel-glow rounded-xl"><AgentChat messages={state?.messages} /></div>
               </>
             )}
 
             {sideTab === 'lab' && (
               <>
-                <ImpactPredictor state={state} />
-                <CounterfactualLab state={state} />
-                <WhatIfPanel state={state} />
+                <div className="panel-glow rounded-xl"><ImpactPredictor state={state} /></div>
+                <div className="panel-glow rounded-xl"><CounterfactualLab state={state} /></div>
+                <div className="panel-glow rounded-xl"><WhatIfPanel state={state} /></div>
               </>
             )}
           </div>

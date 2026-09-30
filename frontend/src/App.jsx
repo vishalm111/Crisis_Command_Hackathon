@@ -8,25 +8,14 @@ import AboutPage from './pages/AboutPage';
 import DocsPage from './pages/DocsPage';
 
 function RouteSwitch() {
-  const { path, navigate } = useRouter();
+  const { path } = useRouter();
   const [launched, setLaunched] = useState(false);
 
-  // Show HomePage overlay on '/' until user clicks Launch
-  const showHome = path === '/' && !launched;
+  // On '/', show ONLY HomePage until user clicks Launch — don't render CommandCenter behind it
+  if (path === '/' && !launched) {
+    return <HomePage onLaunch={() => setLaunched(true)} />;
+  }
 
-  const handleLaunch = () => {
-    setLaunched(true);
-  };
-
-  return (
-    <>
-      {showHome && <HomePage onLaunch={handleLaunch} />}
-      <MainView path={path} />
-    </>
-  );
-}
-
-function MainView({ path }) {
   switch (path) {
     case '/demo':
       return <InteractiveDemo />;
