@@ -151,23 +151,39 @@ export default function AlertsPanel({
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border tracking-wider ${levelInfo.badge}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${levelInfo.dot}`} />
-                          {levelInfo.label}
+                    <div className="flex flex-col gap-1.5 mb-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border tracking-wider ${levelInfo.badge}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${levelInfo.dot}`} />
+                            {levelInfo.label}
+                          </span>
+                          <span className="text-xs font-bold text-white tracking-wide">{alert.title || 'System Update'}</span>
+                        </div>
+                        
+                        {/* Timestamp Tag */}
+                        <span className="text-xs font-mono font-medium text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800 whitespace-nowrap">
+                          ⏱️ t={alert.at_min ?? 0}m
                         </span>
-                        {alert.id && (
-                          <span className="text-[10px] font-mono text-slate-500">
-                            #{alert.id}
+                      </div>
+                      
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {alert.incident_id && (
+                          <span className="text-[10px] font-mono font-semibold bg-slate-800/80 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700">
+                            ID: {alert.incident_id}
+                          </span>
+                        )}
+                        {alert.resource_id && (
+                          <span className="text-[10px] font-mono font-semibold bg-slate-800/80 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700">
+                            UNIT: {alert.resource_id}
+                          </span>
+                        )}
+                        {alert.related_incident_id && (
+                          <span className="text-[10px] font-mono font-semibold bg-slate-800/80 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700">
+                            AFFECTS: {alert.related_incident_id}
                           </span>
                         )}
                       </div>
-
-                      {/* Timestamp Tag */}
-                      <span className="text-xs font-mono font-medium text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">
-                        ⏱️ t={alert.at_min ?? 0}m
-                      </span>
                     </div>
 
                     <p className="text-xs font-medium text-slate-200 leading-relaxed">

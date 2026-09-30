@@ -161,14 +161,14 @@ def next_step(
         return eng.get_state()
 
     elif _current_step == 7:
-        # Step 7: What-If simulation on snapshot (hypothetical failure of F2)
-        # Running What-If MUST NOT mutate live CrisisState
-        whatif_subagent = WhatIfAgent()
-        whatif_subagent.run(
-            eng.get_state(),
-            TriggerContext(kind=TriggerKind.resource_failure, payload={"resource_id": "F2"}),
-        )
-        eng.log(f"t={eng.get_state().clock_min}: [Scenario Step 7] What-If simulation executed on snapshot")
+        # Step 7: Resource Restoration
+        orch.handle(TriggerContext(kind=TriggerKind.time_advance, payload={"minutes": 3}))
+        try:
+            eng.update_resource_status("A3", ResourceStatus.available)
+        except KeyError:
+            pass
+        orch.handle(TriggerContext(kind=TriggerKind.resource_restored, payload={"resource_id": "A3"}))
+        eng.log(f"t={eng.get_state().clock_min}: [Scenario Step 7] Resource A3 restored to active service")
         return eng.get_state()
 
     else:

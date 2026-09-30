@@ -176,6 +176,15 @@ def create_incident(req: IncidentCreateRequest) -> Incident:
             source=IncidentSource.structured,
         )
 
+    engine.add_alert(Alert(
+        id=f"alt_{int(time.time() * 1000)}",
+        level=AlertLevel.critical if new_inc.severity >= 4 else AlertLevel.warning,
+        title="New Incident Detected",
+        text=f"Incident {new_inc.id} reported: {new_inc.description[:50]}...",
+        at_min=state.clock_min,
+        incident_id=new_inc.id
+    ))
+
     # Route through orchestrator workflow
     ctx = TriggerContext(kind=TriggerKind.new_incident, payload={"incident": new_inc})
     orchestrator.handle(ctx)
@@ -193,6 +202,16 @@ def escalate_incident(incident_id: str, req: IncidentEscalateRequest) -> Inciden
         raise HTTPException(status_code=404, detail=f"Incident with id {incident_id} not found")
 
     target_inc.severity = req.severity
+    
+    engine.add_alert(Alert(
+        id=f"alt_{int(time.time() * 1000)}",
+        level=AlertLevel.critical if req.severity >= 4 else AlertLevel.warning,
+        title="Incident Escalated",
+        text=f"Incident {incident_id} escalated to Severity {req.severity}/5",
+        at_min=state.clock_min,
+        incident_id=incident_id
+    ))
+    
     ctx = TriggerContext(
         kind=TriggerKind.escalation,
         payload={"incident_id": incident_id, "severity": req.severity},
@@ -213,6 +232,17 @@ def fail_resource(resource_id: str) -> Resource:
     except KeyError:
         raise HTTPException(status_code=404, detail=f"Resource with id {resource_id} not found")
 
+    res = next((r for r in engine.get_state().resources if r.id == resource_id), None)
+    engine.add_alert(Alert(
+        id=f"alt_{int(time.time() * 1000)}",
+        level=AlertLevel.critical,
+        title="Resource Failure",
+        text=f"Unit {resource_id} is now OFFLINE. Replanning triggered.",
+        at_min=engine.get_state().clock_min,
+        resource_id=resource_id,
+        related_incident_id=res.assigned_incident_id if res else None
+    ))
+
     ctx = TriggerContext(kind=TriggerKind.resource_failure, payload={"resource_id": resource_id})
     orchestrator.handle(ctx)
 
@@ -230,6 +260,15 @@ def restore_resource(resource_id: str) -> Resource:
         engine.update_resource_status(resource_id, ResourceStatus.available)
     except KeyError:
         raise HTTPException(status_code=404, detail=f"Resource with id {resource_id} not found")
+
+    engine.add_alert(Alert(
+        id=f"alt_{int(time.time() * 1000)}",
+        level=AlertLevel.info,
+        title="Resource Restored",
+        text=f"Unit {resource_id} is back ONLINE and available.",
+        at_min=engine.get_state().clock_min,
+        resource_id=resource_id
+    ))
 
     ctx = TriggerContext(kind=TriggerKind.resource_restored, payload={"resource_id": resource_id})
     orchestrator.handle(ctx)
@@ -270,6 +309,14 @@ def approve_request(approval_id: str, req: Optional[ApprovalDecisionRequest] = N
     # Record decision
     engine.record_approval_decision(approval_id, ApprovalStatus.approved)
     state.approval.status = ApprovalStatus.approved
+
+    engine.add_alert(Alert(
+        id=f"alt_{int(time.time() * 1000)}",
+        level=AlertLevel.info,
+        title="Approval Granted",
+        text=f"High-impact reallocation {approval_id} approved. Executing changes.",
+        at_min=state.clock_min
+    ))
 
     # Promote proposed_plan to current_plan with bumped version and locked constraints
     if state.proposed_plan:
@@ -324,6 +371,14 @@ def reject_request(approval_id: str, req: Optional[ApprovalDecisionRequest] = No
     # Record decision
     engine.record_approval_decision(approval_id, ApprovalStatus.rejected)
     state.approval.status = ApprovalStatus.rejected
+
+    engine.add_alert(Alert(
+        id=f"alt_{int(time.time() * 1000)}",
+        level=AlertLevel.warning,
+        title="Approval Rejected",
+        text=f"Coordinator rejected plan reallocation {approval_id}. Baseline preserved.",
+        at_min=state.clock_min
+    ))
 
     # Record constraints so rejected preemption move is not re-attempted
     if state.approval.diff:
@@ -605,6 +660,20 @@ def chaos_step(req: ChaosRequest) -> ChaosResponse:
         affected = f"t={state.clock_min}m"
 
     engine.log(f"t={state.clock_min}: [Chaos Mode] {event_type} - {desc}")
+    
+    target_id = target.id if 'target' in locals() else None
+    inc_id = target_inc.id if 'target_inc' in locals() else None
+    
+    engine.add_alert(Alert(
+        id=f"alt_{int(time.time() * 1000)}",
+        level=AlertLevel.warning if event_type != "Resource Restored" else AlertLevel.info,
+        title=f"Simulation Event: {event_type}",
+        text=desc,
+        at_min=state.clock_min,
+        resource_id=target_id,
+        incident_id=inc_id
+    ))
+    
     return ChaosResponse(
         event_type=event_type,
         description=desc,

@@ -143,8 +143,13 @@ class ApprovalRequest(BaseModel):
 class Alert(BaseModel):
     id: str
     level: AlertLevel = AlertLevel.info
+    title: str = "System Alert"
     text: str
     at_min: int = 0
+    incident_id: Optional[str] = None
+    resource_id: Optional[str] = None
+    related_incident_id: Optional[str] = None
+    related_resource_id: Optional[str] = None
 
 
 class AgentMessage(BaseModel):

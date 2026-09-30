@@ -368,6 +368,13 @@ class Orchestrator:
                     self.engine.log(
                         f"t={self.engine.get_state().clock_min}: Plan v{new_plan.version} generated; human approval gate triggered"
                     )
+                    self.engine.add_alert(Alert(
+                        id=f"alt_{int(time.time() * 1000)}",
+                        level=AlertLevel.warning,
+                        title="Approval Required",
+                        text="Proposed plan contains high-impact changes requiring human coordinator approval.",
+                        at_min=self.engine.get_state().clock_min
+                    ))
                 else:
                     # Auto-commit plan (P1-A4: archive old plan and record diff)
                     self.engine.set_plan(new_plan, archive_current=True, diff=gate_decision.diff)
@@ -376,6 +383,14 @@ class Orchestrator:
                     self.engine.log(
                         f"t={self.engine.get_state().clock_min}: Plan v{new_plan.version} automatically committed"
                     )
+                    if gate_decision.diff and gate_decision.diff.changes:
+                        self.engine.add_alert(Alert(
+                            id=f"alt_{int(time.time() * 1000)}",
+                            level=AlertLevel.info,
+                            title="Plan Reallocation",
+                            text=f"Auto-committed {len(gate_decision.diff.changes)} dispatch changes.",
+                            at_min=self.engine.get_state().clock_min
+                        ))
 
         result_state = self.engine.get_state()
         self._debounce_cache[trigger_key] = (time.time(), result_state)

@@ -5,59 +5,56 @@ const STORY_STEPS = [
   {
     step: 1,
     title: '1. Baseline Dispatch',
-    narration: 'Incident I1 (Cardiac Emergency) reported at Downtown. Autonomous agent dispatches primary Ambulance A1.',
+    narration: 'Incident I1 (Medical) reported. Autonomous agent dispatches primary unit.',
     action: async (post) => {
       await post('/scenario/reset', {});
+      await post('/scenario/next', {});
     },
   },
   {
     step: 2,
     title: '2. Cascading Outbreak',
-    narration: 'Incident I2 (Chemical Hazmat Spill) erupts at Industrial Park. Fire engines F1 and F2 are deployed.',
+    narration: 'Incident I2 (Fire) erupts. Fire engine and ambulance are deployed.',
     action: async (post) => {
       await post('/scenario/next', {});
     },
   },
   {
     step: 3,
-    title: '3. Critical Asset Failure',
-    narration: 'Primary unit A1 suffers severe engine breakdown en route! Crisis escalation triggers.',
+    title: '3. LLM Parsing & Vague Report',
+    narration: 'Free-text vague report (I3) received. Agent extracts details, flags for confirmation, holds dispatch.',
     action: async (post) => {
-      await post('/resources/A1/fail', {});
+      await post('/scenario/next', {});
     },
   },
   {
     step: 4,
-    title: '4. Autonomous Replanning',
-    narration: 'Agent detects severed coverage and generates Reallocation Plan v2: Reassigns Ambulance A2.',
+    title: '4. Critical Incident & Preemption',
+    narration: 'Major building collapse (I4) with severity 5. Agent preempts a unit from a lower-tier incident.',
     action: async (post) => {
       await post('/scenario/next', {});
     },
   },
   {
     step: 5,
-    title: '5. Human-in-the-Loop Gate',
-    narration: 'High-severity reallocation requires Human Approval. Safety policy prevents autonomous override.',
-    action: async (post, state) => {
-      if (state?.approval?.id) {
-        await post(`/approval/${state.approval.id}/approve`, {});
-      } else {
-        await post('/scenario/next', {});
-      }
+    title: '5. Resource Failure & Replanning',
+    narration: 'Unit A3 suffers breakdown en route to I4! Agent reroutes A2, triggering human approval gate.',
+    action: async (post) => {
+      await post('/scenario/next', {});
     },
   },
   {
     step: 6,
-    title: '6. Arrival & Containment',
-    narration: 'Time advances. Approved units arrive on-scene. Hazmat containment and cardiac care proceed.',
+    title: '6. Human-in-the-Loop Gate',
+    narration: 'Coordinator approves high-impact pending reallocation. Plan promoted, constraints locked.',
     action: async (post) => {
-      await post('/time/advance', { minutes: 5 });
+      await post('/scenario/next', {});
     },
   },
   {
     step: 7,
-    title: '7. Final Scoreboard & Resolution',
-    narration: 'Incidents stabilized. Full decision trace, plan diff, and audit log recorded for governance.',
+    title: '7. Resource Restoration',
+    narration: 'Failed unit A3 is repaired and comes back online. System automatically re-evaluates capacity.',
     action: async (post) => {
       await post('/scenario/next', {});
     },
