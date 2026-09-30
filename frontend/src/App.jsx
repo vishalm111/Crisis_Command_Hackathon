@@ -10,16 +10,16 @@ function RouteSwitch() {
   const { path } = useRouter();
 
   switch (path) {
-    case '/app':
-    case '/':
-    default:
-      return <CommandCenter />;
     case '/demo':
       return <InteractiveDemo />;
     case '/about':
       return <AboutPage />;
     case '/docs':
       return <DocsPage />;
+    case '/app':
+    case '/':
+    default:
+      return <CommandCenter />;
   }
 }
 
