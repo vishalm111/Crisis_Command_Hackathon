@@ -1,0 +1,20 @@
+# Crisis Command context bundle
+
+Share this folder with teammates and coding agents. Copy the contents into the repo root (so `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` sit at the top and `docs/` beside `backend/`).
+
+| File | For |
+|---|---|
+| `AGENTS.md` | Antigravity, Codex, Cursor, and Claude Code (via import). Single source of truth for agents |
+| `CLAUDE.md` | Claude Code. Imports `AGENTS.md` |
+| `GEMINI.md` | Antigravity/Gemini pointer to `AGENTS.md` |
+| `docs/00_PROBLEM_STATEMENT.md` | What and why (from Round 1 doc) |
+| `docs/01_ARCHITECTURE.md` | Orchestrator, sub-agents, triggers, Grok use |
+| `docs/02_TIMELINE.md` | Phases, exit criteria, checkpoints |
+| `docs/03_DATA_CONTRACT.md` | Draft entity outline |
+| `docs/actions/` | Autonomous action files per person, agent protocol, shared contract v0 (proposed priority, allocation, approval rules and the demo scenario) |
+| `docs/tasks/P1.md` to `P4.md` | Per-person summary task lists |
+| `docs/specs/AGENT_SPEC_TEMPLATE.md` | Spec card template |
+| `docs/GITHUB_SETUP.md` | Repo, CODEOWNERS, branching, CI, secrets |
+| `docs/OPEN_ITEMS.md` | Unresolved decisions |
+
+Tip for agents: tell the tool "I am P3" and it should load `docs/tasks/P3.md` and stay in P3's files.
