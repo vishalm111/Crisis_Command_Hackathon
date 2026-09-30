@@ -6,9 +6,9 @@ def build_seed_state() -> CrisisState:
         Resource(
             id="A1",
             type=ResourceType.ambulance,
-            name="Ambulance A1 (Koramangala)",
-            base=LatLng(lat=12.9298, lng=77.6209, label="St. John's Base"),
-            location=LatLng(lat=12.9298, lng=77.6209, label="St. John's Base"),
+            name="Ambulance A1 (Central)",
+            base=LatLng(lat=12.9715, lng=77.5900, label="St. Martha's Base"),
+            location=LatLng(lat=12.9715, lng=77.5900, label="St. Martha's Base"),
         ),
         Resource(
             id="A2",
@@ -41,9 +41,9 @@ def build_seed_state() -> CrisisState:
         Resource(
             id="R1",
             type=ResourceType.rescue_team,
-            name="Rescue Team R1 (East)",
-            base=LatLng(lat=12.9868, lng=77.6651, label="NDRF Base CV Raman Nagar"),
-            location=LatLng(lat=12.9868, lng=77.6651, label="NDRF Base CV Raman Nagar"),
+            name="Rescue Team R1 (Central)",
+            base=LatLng(lat=12.9750, lng=77.6100, label="NDRF Base Halasuru"),
+            location=LatLng(lat=12.9750, lng=77.6100, label="NDRF Base Halasuru"),
         ),
     ]
 

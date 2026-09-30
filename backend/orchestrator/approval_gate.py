@@ -168,7 +168,13 @@ def evaluate(
             )
 
     # Rule 3: Changes 3 or more assignments compared with current plan
-    if len(diff.changes) >= 3:
+    # Routine emergency dispatch to a new incident is not an operational disruption;
+    # disruptive reorganization requires 3+ changes with at least 2 active assignments disrupted
+    reassignments = [
+        c for c in diff.changes
+        if c.kind in (DiffChangeKind.reassigned, DiffChangeKind.removed)
+    ]
+    if len(diff.changes) >= 3 and len(reassignments) >= 2:
         reasons.append(
             f"Proposed plan changes {len(diff.changes)} assignments compared with current plan (major operational disruption)."
         )

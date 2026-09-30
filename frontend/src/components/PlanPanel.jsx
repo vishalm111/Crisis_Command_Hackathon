@@ -39,21 +39,21 @@ export default function PlanPanel({
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden text-slate-100 flex flex-col h-full">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+      <div className="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-white flex items-center gap-2">
+          <h2 className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
             <span>📋</span> {title}
           </h2>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">
+          <p className="text-[11px] text-slate-400 font-mono mt-0.5">
             ID: <span className="text-slate-300">{id || "unassigned"}</span> | Version: <span className="text-indigo-400 font-bold">v{version}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
             {assignments.length} assigned
           </span>
           {unmet.length > 0 && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
               {unmet.length} unmet
             </span>
           )}
@@ -61,43 +61,43 @@ export default function PlanPanel({
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-4 bg-slate-900/50 border-b border-slate-800/80 text-center">
-        <div className="bg-slate-800/40 rounded-lg p-2.5 border border-slate-800">
-          <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Avg ETA</div>
-          <div className="text-lg font-bold text-sky-400 mt-0.5">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 px-3 py-2 bg-slate-900/50 border-b border-slate-800/80 text-center">
+        <div className="bg-slate-800/40 rounded-lg p-1.5 border border-slate-800">
+          <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Avg ETA</div>
+          <div className="text-base font-bold text-sky-400 mt-0.5">
             {metrics.avg_eta_min != null ? `${Number(metrics.avg_eta_min).toFixed(1)}m` : "--"}
           </div>
         </div>
-        <div className="bg-slate-800/40 rounded-lg p-2.5 border border-slate-800">
-          <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Max ETA</div>
-          <div className="text-lg font-bold text-amber-400 mt-0.5">
+        <div className="bg-slate-800/40 rounded-lg p-1.5 border border-slate-800">
+          <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Max ETA</div>
+          <div className="text-base font-bold text-amber-400 mt-0.5">
             {metrics.max_eta_min != null ? `${Number(metrics.max_eta_min).toFixed(1)}m` : "--"}
           </div>
         </div>
-        <div className="bg-slate-800/40 rounded-lg p-2.5 border border-slate-800">
-          <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Coverage</div>
-          <div className="text-lg font-bold text-emerald-400 mt-0.5">
+        <div className="bg-slate-800/40 rounded-lg p-1.5 border border-slate-800">
+          <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Coverage</div>
+          <div className="text-base font-bold text-emerald-400 mt-0.5">
             {metrics.coverage_pct != null ? `${Number(metrics.coverage_pct).toFixed(0)}%` : "--"}
           </div>
         </div>
-        <div className="bg-slate-800/40 rounded-lg p-2.5 border border-slate-800">
-          <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Utilization</div>
-          <div className="text-lg font-bold text-purple-400 mt-0.5">
+        <div className="bg-slate-800/40 rounded-lg p-1.5 border border-slate-800">
+          <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Utilization</div>
+          <div className="text-base font-bold text-purple-400 mt-0.5">
             {metrics.utilization_pct != null ? `${Number(metrics.utilization_pct).toFixed(0)}%` : "--"}
           </div>
         </div>
-        <div className="col-span-2 sm:col-span-1 bg-slate-800/40 rounded-lg p-2.5 border border-slate-800">
-          <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Unresolved</div>
-          <div className="text-lg font-bold text-rose-400 mt-0.5">
+        <div className="col-span-2 sm:col-span-1 bg-slate-800/40 rounded-lg p-1.5 border border-slate-800">
+          <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Unresolved</div>
+          <div className="text-base font-bold text-rose-400 mt-0.5">
             {metrics.unresolved_count != null ? metrics.unresolved_count : 0}
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2.5 max-h-[280px]">
         {/* Unmet Slots Alert Section */}
         {unmet.length > 0 && (
-          <div className="rounded-lg bg-rose-950/20 border border-rose-900/50 p-3.5">
+          <div className="rounded-lg bg-rose-950/20 border border-rose-900/50 p-2.5">
             <h3 className="text-xs font-semibold text-rose-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
               <span>⚠️</span> Unmet Incident Slots ({unmet.length})
             </h3>

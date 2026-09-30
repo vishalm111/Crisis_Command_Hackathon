@@ -56,14 +56,14 @@ export default function ExplanationLog({
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl flex flex-col h-full text-slate-100 overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3">
+      <div className="px-4 py-2.5 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-2.5">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h2 className="text-lg font-semibold tracking-tight text-white flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
               <span>🧠</span> Decision Explanations
             </h2>
             {llmStatus && (
-              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono border ${
+              <span className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono border ${
                 llmStatus === 'enabled_ok'
                   ? 'bg-purple-500/10 text-purple-300 border-purple-500/30'
                   : llmStatus === 'enabled_fallback'
@@ -73,45 +73,45 @@ export default function ExplanationLog({
                 <span className={`w-1.5 h-1.5 rounded-full ${
                   llmStatus === 'enabled_ok' ? 'bg-purple-400 animate-pulse' : llmStatus === 'enabled_fallback' ? 'bg-amber-400' : 'bg-slate-400'
                 }`} />
-                {llmStatus === 'enabled_ok' ? 'Grok Active' : llmStatus === 'enabled_fallback' ? 'Grok Fallback' : 'Offline / Rule Mode'}
+                {llmStatus === 'enabled_ok' ? 'Grok Active' : llmStatus === 'enabled_fallback' ? 'Grok Fallback' : 'Rule Mode'}
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Deterministic and narrated rationale for plan updates, preemptions, and safety overrides
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            Rationale for plan updates, preemptions, and safety overrides
           </p>
         </div>
 
         {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-slate-900/80 p-1 rounded-lg border border-slate-800 text-xs">
+        <div className="flex flex-wrap items-center gap-1 bg-slate-900/80 p-0.5 rounded-lg border border-slate-800 text-[11px]">
           {['ALL', 'new_incident', 'resource_failure', 'escalation', 'approval_decision'].map((trig) => (
             <button
               key={trig}
               onClick={() => setFilterTrigger(trig)}
-              className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+              className={`px-2 py-0.5 rounded-md font-medium transition-all ${
                 filterTrigger === trig
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
               }`}
             >
-              {trig === 'ALL' ? 'All Triggers' : (TRIGGER_BADGES[trig]?.label || trig)}
+              {trig === 'ALL' ? 'All' : (TRIGGER_BADGES[trig]?.label || trig)}
             </button>
           ))}
         </div>
       </div>
 
       {/* Explanations Feed */}
-      <div className="p-5 overflow-y-auto space-y-4 flex-1">
+      <div className="p-3 overflow-y-auto space-y-2.5 flex-1 max-h-[240px]">
         {filteredExplanations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center p-8 border border-dashed border-slate-800 rounded-xl bg-slate-950/30">
-            <div className="w-12 h-12 rounded-full bg-slate-800/60 flex items-center justify-center text-xl mb-2 text-slate-400">
+          <div className="flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-xl bg-slate-950/30">
+            <div className="w-10 h-10 rounded-full bg-slate-800/60 flex items-center justify-center text-lg mb-1.5 text-slate-400">
               💡
             </div>
-            <h3 className="text-sm font-semibold text-slate-300">No Explanations Logged</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm">
+            <h3 className="text-xs font-semibold text-slate-300">No Explanations Logged</h3>
+            <p className="text-[11px] text-slate-500 mt-0.5 max-w-sm">
               {filterTrigger === 'ALL'
-                ? 'No orchestrator actions or reallocations have occurred yet. Explanations will appear here as incidents and resource events occur.'
-                : `No explanations recorded for trigger type "${filterTrigger}".`}
+                ? 'No orchestrator actions or reallocations have occurred yet.'
+                : `No explanations recorded for trigger "${filterTrigger}".`}
             </p>
           </div>
         ) : (
@@ -125,7 +125,7 @@ export default function ExplanationLog({
             return (
               <div
                 key={exp.id || `exp-${expIdx}`}
-                className="bg-slate-950/70 border border-slate-800 rounded-xl p-4 transition-all hover:border-slate-700 shadow-md"
+                className="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5 transition-all hover:border-slate-700 shadow-md"
               >
                 {/* Header row: ID, Trigger Badge */}
                 <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-800/80">

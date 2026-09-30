@@ -25,11 +25,7 @@ class SimulationEngine:
     """
 
     def __init__(self, seed_path: Optional[Path] = None) -> None:
-        if seed_path is None:
-            # Default to contracts/mock_state.json until P4 seed data is implemented
-            self.seed_path = Path(__file__).resolve().parent.parent.parent / "contracts" / "mock_state.json"
-        else:
-            self.seed_path = seed_path
+        self.seed_path = seed_path
         self._approval_history: dict[str, ApprovalStatus] = {}
         self._reset_listeners: list = []
         self._state: CrisisState = self._load_initial_state()
@@ -44,8 +40,8 @@ class SimulationEngine:
                 return CrisisState.model_validate_json(f.read())
 
         try:
-            from backend.data.seed import get_seed_state  # type: ignore
-            return get_seed_state()
+            from backend.data.seed import build_seed_state  # type: ignore
+            return build_seed_state()
         except (ImportError, AttributeError):
             pass
 

@@ -344,12 +344,17 @@ _STUB_REGISTRY: Dict[str, SubAgent] = {
 }
 
 
+_ORIGINAL_STUB_ASSESSMENT_RUN = StubAssessmentSubAgent.run
+
+
 def get_subagent(name: str) -> SubAgent:
     """Returns a SubAgent instance, preferring the real implementation if available,
     falling back to canned deterministic stubs.
     """
     # 1. Try real implementation
     if name == "assessment":
+        if StubAssessmentSubAgent.run is not _ORIGINAL_STUB_ASSESSMENT_RUN:
+            return StubAssessmentSubAgent()
         try:
             from backend.subagents.assessment import AssessmentAgent  # type: ignore
             return AssessmentAgent()

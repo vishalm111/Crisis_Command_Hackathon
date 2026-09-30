@@ -82,7 +82,10 @@ def run_flow_sequential(
                 accumulated_payload[key] = val
 
             if "incidents" in result.payload and isinstance(result.payload["incidents"], list):
-                working_state.incidents = result.payload["incidents"]
+                existing_map = {inc.id: inc for inc in working_state.incidents}
+                for inc in result.payload["incidents"]:
+                    existing_map[inc.id] = inc
+                working_state.incidents = list(existing_map.values())
 
             if "plan" in result.payload and isinstance(result.payload["plan"], Plan):
                 working_state.current_plan = result.payload["plan"]
@@ -131,7 +134,10 @@ def _make_agent_node(agent_name: str):
 
             # Propagate updates to working state
             if "incidents" in result.payload and isinstance(result.payload["incidents"], list):
-                working_state.incidents = result.payload["incidents"]
+                existing_map = {inc.id: inc for inc in working_state.incidents}
+                for inc in result.payload["incidents"]:
+                    existing_map[inc.id] = inc
+                working_state.incidents = list(existing_map.values())
 
             if "plan" in result.payload and isinstance(result.payload["plan"], Plan):
                 working_state.current_plan = result.payload["plan"]

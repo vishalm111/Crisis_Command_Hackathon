@@ -20,5 +20,5 @@ export function usePolling(fn, ms = 1500) {
         return () => clearInterval(intervalId);
     }, [execute, ms]);
 
-    return { data, error };
+    return { data, error, refresh: execute };
 }

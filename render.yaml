@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: crisis-command-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: LLM_ENABLED
+        value: "false"
+      - key: CORS_ORIGINS
+        value: "*"
+
+  - type: web
+    name: crisis-command-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: crisis-command-backend
+          property: host

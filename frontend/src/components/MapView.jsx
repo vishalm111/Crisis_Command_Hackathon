@@ -4,13 +4,13 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import mockState from '../../../contracts/mock_state.json';
 
-// Define custom divIcons
+// High-contrast, visible pill badge marker with emoji + text ID
 const createIcon = (emoji, color, label) => {
     return L.divIcon({
-        className: 'custom-div-icon',
-        html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-size: 14px;" title="${label}">${emoji}</div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
+        className: 'custom-map-pill',
+        html: `<div style="background-color: ${color}; color: #ffffff; font-weight: 800; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; line-height: 1; padding: 2.5px 6px; border-radius: 9999px; border: 1.5px solid #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.5); display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; transform: translate(-50%, -50%); text-shadow: 0 1px 2px rgba(0,0,0,0.8); cursor: pointer;"><span style="font-size: 12px; line-height: 1;">${emoji}</span><span>${label || ''}</span></div>`,
+        iconSize: [0, 0],
+        iconAnchor: [0, 0]
     });
 };
 
@@ -38,11 +38,11 @@ const getIncidentColor = (tier) => {
 
 const getResourceColor = (status) => {
     switch (status) {
-        case 'available': return '#22c55e'; // green-500
+        case 'available': return '#10b981'; // emerald-500
         case 'en_route': return '#3b82f6'; // blue-500
         case 'on_scene': return '#8b5cf6'; // violet-500
-        case 'unavailable': return '#6b7280'; // gray-500
-        default: return '#9ca3af';
+        case 'unavailable': return '#64748b'; // slate-500
+        default: return '#94a3b8';
     }
 };
 
@@ -50,16 +50,28 @@ export default function MapView({ state }) {
     const data = state || mockState;
 
     if (!data || !data.incidents) {
-        return <div className="p-4 bg-white shadow rounded border h-96 flex items-center justify-center">Loading map data...</div>;
+        return (
+            <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 h-[380px] flex items-center justify-center">
+                Loading geospatial map data...
+            </div>
+        );
     }
 
     const center = [12.97, 77.59]; // Central Bengaluru
 
     return (
-        <div className="bg-white p-4 shadow-sm rounded-lg border border-gray-200 h-[600px] flex flex-col relative">
-            <h2 className="font-bold text-gray-800 uppercase tracking-wide text-sm mb-2">Map View</h2>
-            <div className="flex-1 bg-[#e5e3df] rounded-md overflow-hidden relative">
-                <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%', backgroundColor: 'transparent' }}>
+        <div className="bg-slate-900 p-3 shadow-xl rounded-xl border border-slate-800 text-slate-100 h-[400px] flex flex-col relative">
+            <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
+                    <span>🗺️</span> Bengaluru Emergency Geospatial Map
+                </h2>
+                <div className="text-[11px] font-mono text-slate-400">
+                    {data.incidents?.length || 0} incidents &bull; {data.resources?.length || 0} units
+                </div>
+            </div>
+
+            <div className="flex-1 rounded-lg overflow-hidden relative border border-slate-800">
+                <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%', backgroundColor: '#1e293b' }}>
                     <TileLayer
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
@@ -73,9 +85,11 @@ export default function MapView({ state }) {
                             icon={createIcon(typeToEmoji[inc.type] || '❓', getIncidentColor(inc.tier), inc.id)}
                         >
                             <Popup>
-                                <strong>{inc.id} ({inc.type})</strong><br/>
-                                Tier: {inc.tier}<br/>
-                                {inc.description}
+                                <div className="text-xs font-sans text-slate-900">
+                                    <strong className="text-sm">{inc.id} ({inc.type})</strong><br/>
+                                    <span className="font-semibold">Tier:</span> {inc.tier}<br/>
+                                    <span className="text-slate-600">{inc.description}</span>
+                                </div>
                             </Popup>
                         </Marker>
                     ))}
@@ -85,12 +99,14 @@ export default function MapView({ state }) {
                         <Marker 
                             key={`fac-${fac.id}`} 
                             position={[fac.location.lat, fac.location.lng]}
-                            icon={createIcon(fac.kind === 'hospital' ? '🏥' : '⛺', '#ec4899', fac.id)} // pink-500
+                            icon={createIcon(fac.kind === 'hospital' ? '🏥' : '⛺', '#ec4899', fac.id || fac.name)}
                         >
                             <Popup>
-                                <strong>{fac.name}</strong><br/>
-                                Kind: {fac.kind}<br/>
-                                Load: {fac.load} / {fac.capacity}
+                                <div className="text-xs font-sans text-slate-900">
+                                    <strong className="text-sm">{fac.name}</strong><br/>
+                                    <span className="font-semibold">Kind:</span> {fac.kind}<br/>
+                                    <span>Load: {fac.load} / {fac.capacity}</span>
+                                </div>
                             </Popup>
                         </Marker>
                     ))}
@@ -112,9 +128,11 @@ export default function MapView({ state }) {
                                     zIndexOffset={100}
                                 >
                                     <Popup>
-                                        <strong>{res.id}: {res.name}</strong><br/>
-                                        Status: {res.status}<br/>
-                                        Assigned to: {res.assigned_incident_id || 'None'}
+                                        <div className="text-xs font-sans text-slate-900">
+                                            <strong className="text-sm">{res.id}: {res.name}</strong><br/>
+                                            <span>Status: {res.status}</span><br/>
+                                            <span>Assigned to: {res.assigned_incident_id || 'None'}</span>
+                                        </div>
                                     </Popup>
                                 </Marker>
                                 
@@ -129,23 +147,26 @@ export default function MapView({ state }) {
                     })}
                 </MapContainer>
                 
-                {/* Legend - positioned absolutely within the map container area to hover over tiles */}
-                <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm p-3 rounded-md shadow-lg border border-gray-200 text-xs z-[1000] pointer-events-auto">
-                    <div className="font-bold mb-2 border-b border-gray-200 pb-1 text-gray-700">Legend</div>
-                    <div className="flex gap-6">
+                {/* Legend - positioned within map canvas */}
+                <div className="absolute bottom-2.5 left-2.5 bg-slate-950/85 backdrop-blur-md p-2 rounded-lg shadow-xl border border-slate-700 text-[10px] z-[1000] pointer-events-auto text-slate-300 font-sans">
+                    <div className="font-bold mb-1 border-b border-slate-800 pb-0.5 text-slate-200 flex items-center justify-between gap-4">
+                        <span>MAP LEGEND</span>
+                        <span className="text-[9px] text-slate-500 font-normal">Active Units</span>
+                    </div>
+                    <div className="flex gap-3">
                         <div>
-                            <div className="font-semibold mb-1 text-gray-600">Incidents</div>
-                            <div className="flex items-center gap-1.5 mb-1"><span className="w-3 h-3 rounded-full bg-red-500 inline-block shadow-sm"></span> Critical</div>
-                            <div className="flex items-center gap-1.5 mb-1"><span className="w-3 h-3 rounded-full bg-orange-500 inline-block shadow-sm"></span> High</div>
-                            <div className="flex items-center gap-1.5 mb-1"><span className="w-3 h-3 rounded-full bg-yellow-500 inline-block shadow-sm"></span> Medium</div>
-                            <div className="flex items-center gap-1.5 mb-1"><span className="w-3 h-3 rounded-full bg-blue-500 inline-block shadow-sm"></span> Low</div>
+                            <div className="font-semibold text-slate-400 uppercase text-[9px] mb-0.5">Incidents</div>
+                            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span> Critical</div>
+                            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-orange-500 inline-block"></span> High</div>
+                            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-500 inline-block"></span> Medium</div>
+                            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block"></span> Low</div>
                         </div>
                         <div>
-                            <div className="font-semibold mb-1 text-gray-600">Resources</div>
-                            <div className="flex items-center gap-1.5 mb-1"><span className="w-3 h-3 rounded-full bg-green-500 inline-block shadow-sm"></span> Available</div>
-                            <div className="flex items-center gap-1.5 mb-1"><span className="w-3 h-3 rounded-full bg-blue-500 inline-block shadow-sm"></span> En Route</div>
-                            <div className="flex items-center gap-1.5 mb-1"><span className="w-3 h-3 rounded-full bg-violet-500 inline-block shadow-sm"></span> On Scene</div>
-                            <div className="flex items-center gap-1.5 mb-1"><span className="w-3 h-3 rounded-full bg-gray-500 inline-block shadow-sm"></span> Unavailable</div>
+                            <div className="font-semibold text-slate-400 uppercase text-[9px] mb-0.5">Resources</div>
+                            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Available</div>
+                            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block"></span> En Route</div>
+                            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-violet-500 inline-block"></span> On Scene</div>
+                            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-500 inline-block"></span> Offline</div>
                         </div>
                     </div>
                 </div>

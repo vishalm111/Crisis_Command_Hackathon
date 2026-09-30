@@ -249,3 +249,7 @@ class ExplainerSubAgent:
             payload={"explanation": explanation},
             traces=traces,
         )
+
+
+ExplainerAgent = ExplainerSubAgent
+explainer_agent = ExplainerSubAgent()

@@ -38,7 +38,9 @@ from backend.models import (
 )
 from backend.orchestrator.orchestrator import get_orchestrator
 from backend.services.engine import SimulationEngine, get_engine
+from backend.services.scenario import next_step, reset_scenario, run_all
 from backend.subagents.base import TriggerContext
+from backend.subagents.whatif import WhatIfAgent
 
 app = FastAPI(
     title="Crisis Command API",
@@ -49,10 +51,11 @@ app = FastAPI(
 settings = get_settings()
 
 # Enable CORS
+is_wildcard = "*" in (settings.cors_origins or ["*"])
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins or ["*"],
-    allow_credentials=True,
+    allow_credentials=not is_wildcard,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -118,20 +121,21 @@ def get_state() -> CrisisState:
 @api_router.post("/scenario/reset", response_model=CrisisState)
 def scenario_reset() -> CrisisState:
     engine = get_engine()
-    return engine.reset()
+    return reset_scenario(engine)
 
 
 @api_router.post("/scenario/next", response_model=CrisisState)
 def scenario_next() -> CrisisState:
+    engine = get_engine()
     orchestrator = get_orchestrator()
-    orchestrator.handle(TriggerContext(kind=TriggerKind.time_advance, payload={"minutes": 5}))
-    return get_engine().get_state()
+    return next_step(engine, orchestrator)
 
 
 @api_router.post("/scenario/run", response_model=CrisisState)
 def scenario_run() -> CrisisState:
     engine = get_engine()
-    return engine.reset()
+    orchestrator = get_orchestrator()
+    return run_all(engine, orchestrator)
 
 
 @api_router.post("/incidents", response_model=Incident)
@@ -347,37 +351,24 @@ def reject_request(approval_id: str, req: Optional[ApprovalDecisionRequest] = No
 
 @api_router.post("/whatif", response_model=WhatIfResponse)
 def what_if_analysis(req: WhatIfRequest) -> WhatIfResponse:
-    orchestrator = get_orchestrator()
     engine = get_engine()
+    state = engine.get_state()
+    agent = WhatIfAgent()
 
-    # Route through orchestrator What-If handler (runs on snapshot)
-    ctx = TriggerContext(kind=TriggerKind.what_if, payload=req.payload)
-    snap = orchestrator.handle(ctx)
+    if req.kind == TriggerKind.what_if:
+        raw_kind = req.payload.get("kind", TriggerKind.resource_failure.value)
+        if isinstance(raw_kind, str):
+            sim_kind = TriggerKind(raw_kind)
+        else:
+            sim_kind = raw_kind
+        sim_payload = req.payload.get("payload", req.payload)
+    else:
+        sim_kind = req.kind
+        sim_payload = req.payload
 
-    resource_id = req.payload.get("resource_id", "F2")
-    diff = snap.approval.diff if snap.approval else PlanDiff(
-        from_version=snap.current_plan.version,
-        to_version=snap.current_plan.version + 1,
-    )
-
-    return WhatIfResponse(
-        scenario={"kind": req.kind.value, "payload": req.payload},
-        affected_incidents=["I4"],
-        affected_resources=[resource_id],
-        conflicts=[f"Resource {resource_id} unavailability causes unmet fire requirement for I4"],
-        approval_required=True,
-        reasons=[f"Simulation of {resource_id} failure leaves critical incident I4 with unmet requirements"],
-        proposed_plan=snap.proposed_plan or snap.current_plan,
-        diff=diff,
-        metrics_before=snap.current_plan.metrics,
-        metrics_after=PlanMetrics(
-            avg_eta_min=snap.current_plan.metrics.avg_eta_min + 1.2,
-            max_eta_min=snap.current_plan.metrics.max_eta_min,
-            coverage_pct=max(0.0, snap.current_plan.metrics.coverage_pct - 10.0),
-            utilization_pct=snap.current_plan.metrics.utilization_pct,
-            unresolved_count=snap.current_plan.metrics.unresolved_count + 1,
-        ),
-    )
+    ctx = TriggerContext(kind=sim_kind, payload=sim_payload)
+    result = agent.run(state, ctx)
+    return WhatIfResponse.model_validate(result.payload)
 
 
 app.include_router(api_router)

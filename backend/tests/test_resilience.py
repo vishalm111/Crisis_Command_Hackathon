@@ -29,12 +29,18 @@ from backend.services.engine import SimulationEngine, get_engine
 from backend.subagents.base import TriggerContext
 
 
+from pathlib import Path
+
+
 @pytest.fixture
 def client():
     # Reset engine state before each test
     eng = get_engine()
+    eng.seed_path = Path(__file__).resolve().parent.parent.parent / "contracts" / "mock_state.json"
     eng.reset()
-    return TestClient(app, raise_server_exceptions=False)
+    yield TestClient(app, raise_server_exceptions=False)
+    eng.seed_path = None
+    eng.reset()
 
 
 def test_p1_t1_reset_safe_at_any_moment(client):

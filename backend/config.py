@@ -26,15 +26,24 @@ class Settings:
         except ValueError:
             self.llm_timeout_seconds = 8.0
 
+        port_val = os.getenv("PORT") or os.getenv("BACKEND_PORT", "8000")
         try:
-            self.backend_port: int = int(os.getenv("BACKEND_PORT", "8000"))
+            self.backend_port: int = int(port_val)
         except ValueError:
             self.backend_port = 8000
 
-        raw_cors = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000")
-        self.cors_origins: List[str] = [
-            origin.strip() for origin in raw_cors.split(",") if origin.strip()
-        ]
+        raw_cors = os.getenv("CORS_ORIGINS", "*")
+        if raw_cors == "*":
+            self.cors_origins: List[str] = ["*"]
+        else:
+            self.cors_origins: List[str] = [
+                origin.strip() for origin in raw_cors.split(",") if origin.strip()
+            ]
+            if "*" not in self.cors_origins:
+                # Always ensure localhost dev origins are present
+                for dev_orig in ("http://localhost:5173", "http://localhost:3000"):
+                    if dev_orig not in self.cors_origins:
+                        self.cors_origins.append(dev_orig)
 
     def __repr__(self) -> str:
         # Never log or expose API key in representations

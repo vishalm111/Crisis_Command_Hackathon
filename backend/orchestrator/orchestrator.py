@@ -330,46 +330,52 @@ class Orchestrator:
             self.engine.add_explanation(payload["explanation"])
 
         # 4. Handle Plan & Approval Gate
-        new_plan: Optional[Plan] = payload.get("plan")
-        if new_plan and isinstance(new_plan, Plan):
-            # Check if logistics refined the assignments
-            if "assignments" in payload and isinstance(payload["assignments"], list):
-                new_plan.assignments = payload["assignments"]
-
-            # Conflict Detection and Plan Merge (P1-A1)
-            new_plan, conflict_traces = detect_and_resolve_conflicts(new_plan, self.engine.get_state())
-            for ct in conflict_traces:
-                self.engine.add_trace(ct)
-
-            # Evaluate approval gate (P1-A2)
-            gate_decision = evaluate(
-                current_state.current_plan, new_plan, self.engine.get_state()
+        if ctx.kind == TriggerKind.approval_decision and ctx.payload.get("decision") == "reject":
+            self.engine.set_proposed_plan(None)
+            self.engine.log(
+                f"t={self.engine.get_state().clock_min}: Plan proposal rejected by human coordinator; current plan preserved"
             )
+        else:
+            new_plan: Optional[Plan] = payload.get("plan")
+            if new_plan and isinstance(new_plan, Plan):
+                # Check if logistics refined the assignments
+                if "assignments" in payload and isinstance(payload["assignments"], list):
+                    new_plan.assignments = payload["assignments"]
 
-            if gate_decision.required:
-                # Set proposed plan and raise ApprovalRequest
-                approval_req = ApprovalRequest(
-                    id=f"appr_{self.engine.get_state().clock_min}_{new_plan.version}",
-                    status=ApprovalStatus.pending,
-                    reasons=gate_decision.reasons,
-                    consequences=gate_decision.consequences,
-                    proposed_plan=new_plan,
-                    diff=gate_decision.diff or diff_plans(current_state.current_plan, new_plan),
-                    created_at_min=self.engine.get_state().clock_min,
+                # Conflict Detection and Plan Merge (P1-A1)
+                new_plan, conflict_traces = detect_and_resolve_conflicts(new_plan, self.engine.get_state())
+                for ct in conflict_traces:
+                    self.engine.add_trace(ct)
+
+                # Evaluate approval gate (P1-A2)
+                gate_decision = evaluate(
+                    current_state.current_plan, new_plan, self.engine.get_state()
                 )
-                self.engine.set_proposed_plan(new_plan)
-                self.engine.set_approval(approval_req)
-                self.engine.log(
-                    f"t={self.engine.get_state().clock_min}: Plan v{new_plan.version} generated; human approval gate triggered"
-                )
-            else:
-                # Auto-commit plan (P1-A4: archive old plan and record diff)
-                self.engine.set_plan(new_plan, archive_current=True, diff=gate_decision.diff)
-                self.engine.set_proposed_plan(None)
-                self.engine.set_approval(None)
-                self.engine.log(
-                    f"t={self.engine.get_state().clock_min}: Plan v{new_plan.version} automatically committed"
-                )
+
+                if gate_decision.required:
+                    # Set proposed plan and raise ApprovalRequest
+                    approval_req = ApprovalRequest(
+                        id=f"appr_{self.engine.get_state().clock_min}_{new_plan.version}",
+                        status=ApprovalStatus.pending,
+                        reasons=gate_decision.reasons,
+                        consequences=gate_decision.consequences,
+                        proposed_plan=new_plan,
+                        diff=gate_decision.diff or diff_plans(current_state.current_plan, new_plan),
+                        created_at_min=self.engine.get_state().clock_min,
+                    )
+                    self.engine.set_proposed_plan(new_plan)
+                    self.engine.set_approval(approval_req)
+                    self.engine.log(
+                        f"t={self.engine.get_state().clock_min}: Plan v{new_plan.version} generated; human approval gate triggered"
+                    )
+                else:
+                    # Auto-commit plan (P1-A4: archive old plan and record diff)
+                    self.engine.set_plan(new_plan, archive_current=True, diff=gate_decision.diff)
+                    self.engine.set_proposed_plan(None)
+                    self.engine.set_approval(None)
+                    self.engine.log(
+                        f"t={self.engine.get_state().clock_min}: Plan v{new_plan.version} automatically committed"
+                    )
 
         result_state = self.engine.get_state()
         self._debounce_cache[trigger_key] = (time.time(), result_state)

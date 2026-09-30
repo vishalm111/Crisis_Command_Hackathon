@@ -1,6 +1,8 @@
 """Allocation subagent: matches emergency resources to incidents.
 
 Pure deterministic function following Shared Contract v0 Section 7.
+Implements priority ordering, tier max-ETA constraints, stickiness,
+preemption rules, and comprehensive decision tracing.
 """
 
 from typing import Any, Callable, Optional, Protocol
@@ -27,7 +29,6 @@ from backend.models.enums import (
     TriggerKind,
 )
 
-# Optional import from base protocol (owned by P1)
 try:
     from backend.subagents.base import SubAgent, SubAgentResult, TriggerContext
 except (ImportError, AttributeError):
@@ -45,7 +46,6 @@ except (ImportError, AttributeError):
         def run(self, state: CrisisState, ctx: TriggerContext) -> SubAgentResult:
             ...
 
-# Optional import from geo service (owned by P4)
 try:
     from backend.services.geo import eta_minutes, haversine_km
 except (ImportError, AttributeError):
@@ -100,7 +100,7 @@ def _compute_plan_metrics(
     assigned_slots = len(assignments)
 
     if total_required_slots > 0:
-        coverage_pct = round((assigned_slots / total_required_slots) * 100.0, 1)
+        coverage_pct = round(min(100.0, (assigned_slots / total_required_slots) * 100.0), 1)
     else:
         coverage_pct = 100.0
 
@@ -111,7 +111,7 @@ def _compute_plan_metrics(
 
     if non_failed_resources:
         utilization_pct = round(
-            (len(assigned_resource_ids) / len(non_failed_resources)) * 100.0, 1
+            min(100.0, (len(assigned_resource_ids) / len(non_failed_resources)) * 100.0), 1
         )
     else:
         utilization_pct = 0.0
@@ -135,7 +135,8 @@ def allocate(
     """Pure, deterministic allocation function.
     
     Assigns nearest eligible resources to active incidents in priority order.
-    Enforces tier max-ETA cutoffs and respects locked/approved constraints.
+    Enforces tier max-ETA cutoffs, stickiness, preemption (Contract Sec 7),
+    and respects locked/approved constraints.
     Returns a new Plan and list of decision TraceEntry objects without mutating input state.
     """
     calc_eta = _resolve_eta_fn(eta_fn)
@@ -163,6 +164,12 @@ def allocate(
     assignments: list[Assignment] = []
     incident_fulfilled: dict[str, dict[ResourceType, int]] = {}
 
+    # Map existing assignments by resource for stickiness and preemption checks
+    old_assignments_by_res: dict[str, Assignment] = {}
+    if state.current_plan:
+        for a in state.current_plan.assignments:
+            old_assignments_by_res[a.resource_id] = a
+
     # 3. Filter incidents
     # Skip resolved incidents and incidents requiring confirmation
     active_incidents: list[Incident] = []
@@ -185,6 +192,7 @@ def allocate(
 
     # Sort incidents by priority descending, tie-break by reported_at_min, then incident ID
     active_incidents.sort(key=lambda inc: (-inc.priority, inc.reported_at_min, inc.id))
+    incident_map = {inc.id: inc for inc in state.incidents}
 
     # 4. Pass 1: Handle locked and approved constraints
     for res_id, (inc_id, is_locked, is_approved) in sorted(locked_resources.items()):
@@ -255,14 +263,14 @@ def allocate(
         max_eta = TIER_MAX_ETA.get(inc.tier, 60.0)
         missing_for_inc: dict[ResourceType, int] = {}
 
-        # Process resource types in deterministic order (by name)
+        # Process resource types in deterministic order (by value)
         for res_type in sorted(inc.required.keys(), key=lambda t: t.value):
             total_needed = inc.required[res_type]
             already_filled = incident_fulfilled.setdefault(inc.id, {}).get(res_type, 0)
             remaining_slots = total_needed - already_filled
 
             for _ in range(remaining_slots):
-                # Search for eligible candidate resources
+                # Search for free eligible candidate resources
                 candidates: list[tuple[Resource, float]] = []
                 for res in available_resources:
                     if res.id in assigned_resource_ids:
@@ -273,41 +281,123 @@ def allocate(
                     if res.id in locked_resources and locked_resources[res.id][0] != inc.id:
                         continue
 
+                    # A resource currently assigned to another active incident is not a free candidate (Rule 2 & 4)
+                    old_a = old_assignments_by_res.get(res.id)
+                    if old_a and old_a.incident_id != inc.id:
+                        old_inc = incident_map.get(old_a.incident_id)
+                        if old_inc and old_inc.status != IncidentStatus.resolved:
+                            continue
+
                     eta = calc_eta(res.location, inc.location)
                     candidates.append((res, eta))
 
-                # Filter by max acceptable ETA for the incident tier
-                eligible = [(r, eta) for (r, eta) in candidates if eta <= max_eta]
+                eligible_free = [(r, eta) for (r, eta) in candidates if eta <= max_eta]
 
-                if not eligible:
-                    missing_for_inc[res_type] = missing_for_inc.get(res_type, 0) + 1
-                    if candidates:
-                        cand_desc = ", ".join(
-                            f"{r.id} (ETA {round(eta, 1)}m > max {max_eta}m)"
-                            for r, eta in sorted(candidates, key=lambda x: (x[1], x[0].id))
-                        )
-                        detail_msg = (
-                            f"No eligible {res_type.value} within max ETA {max_eta}m for incident {inc.id} "
-                            f"(tier {inc.tier.value}). Candidates exceeded limit: [{cand_desc}]"
-                        )
-                    else:
-                        detail_msg = f"No available {res_type.value} for incident {inc.id}. Slot unmet."
+                winner: Optional[Resource] = None
+                winner_eta: float = 0.0
+                winner_rule: str = ""
 
-                    traces.append(
-                        TraceEntry(
-                            agent="allocation",
-                            step="unmet_requirement",
-                            detail=detail_msg,
-                            used_llm=False,
-                            fallback_used=False,
-                            at_min=clock_min,
-                        )
+                # Rule 5: Stickiness
+                # Check if this incident previously held a resource that is free now
+                sticky_candidate: Optional[tuple[Resource, float]] = None
+                for r, eta in eligible_free:
+                    old_a = old_assignments_by_res.get(r.id)
+                    if old_a and old_a.incident_id == inc.id:
+                        sticky_candidate = (r, eta)
+                        break
+
+                if sticky_candidate:
+                    r_sticky, eta_sticky = sticky_candidate
+                    # Check if an alternative candidate improves ETA by at least 5 minutes
+                    better_alt = any(
+                        (eta_sticky - other_eta) >= 5.0
+                        for other_r, other_eta in eligible_free
+                        if other_r.id != r_sticky.id
                     )
-                else:
-                    # Select nearest eligible candidate, break ties deterministically by resource ID
-                    eligible.sort(key=lambda item: (item[1], item[0].id))
-                    winner, winner_eta = eligible[0]
+                    if not better_alt:
+                        winner = r_sticky
+                        winner_eta = eta_sticky
+                        winner_rule = f"Retained existing assignment of {winner.id} to {inc.id} (stickiness)"
 
+                # Rule 2: If no sticky winner, choose nearest eligible free candidate
+                if not winner and eligible_free:
+                    eligible_free.sort(key=lambda item: (item[1], item[0].id))
+                    winner, winner_eta = eligible_free[0]
+                    winner_rule = f"Assigned nearest available {res_type.value} {winner.id} (ETA {round(winner_eta, 1)}m) to incident {inc.id}"
+
+                # Rule 4: Preemption
+                # Only if no free candidate exists within acceptable limits, evaluate preemption
+                if not winner:
+                    preemptible_candidates = []
+                    for res in available_resources:
+                        if res.type != res_type:
+                            continue
+                        if res.id in assigned_resource_ids:
+                            # Is this resource currently assigned to a lower-priority incident?
+                            current_asgn = next((a for a in assignments if a.resource_id == res.id), None)
+                            if not current_asgn:
+                                continue
+                            src_inc = incident_map.get(current_asgn.incident_id)
+                            if not src_inc:
+                                continue
+                            if current_asgn.locked or current_asgn.approved:
+                                continue
+                            if res.status == ResourceStatus.on_scene:
+                                continue
+                            if inc.priority - src_inc.priority < 8.0:
+                                continue
+
+                            eta = calc_eta(res.location, inc.location)
+                            if eta <= max_eta:
+                                preemptible_candidates.append((res, eta, src_inc, current_asgn, True))
+                        else:
+                            # Alternatively, check old assignments from current_plan not yet assigned here
+                            old_asgn = old_assignments_by_res.get(res.id)
+                            if old_asgn and res.type == res_type:
+                                src_inc = incident_map.get(old_asgn.incident_id)
+                                if (
+                                    src_inc
+                                    and not (res.id in locked_resources and locked_resources[res.id][0] != inc.id)
+                                    and not (old_asgn.locked or old_asgn.approved)
+                                    and res.status != ResourceStatus.on_scene
+                                    and (inc.priority - src_inc.priority >= 8.0)
+                                ):
+                                    eta = calc_eta(res.location, inc.location)
+                                    if eta <= max_eta:
+                                        preemptible_candidates.append((res, eta, src_inc, old_asgn, False))
+
+                    if preemptible_candidates:
+                        # Sort taking from lowest-priority source incident first, then smallest ETA, then resource ID
+                        preemptible_candidates.sort(
+                            key=lambda item: (item[2].priority, item[1], item[0].id)
+                        )
+                        p_winner, p_eta, p_src_inc, p_asgn, is_in_new_assignments = preemptible_candidates[0]
+                        winner = p_winner
+                        winner_eta = p_eta
+                        winner_rule = (
+                            f"Preempted {winner.id} from {p_src_inc.id} (priority {p_src_inc.priority:.1f}) "
+                            f"for {inc.id} (priority {inc.priority:.1f}, gap {inc.priority - p_src_inc.priority:.1f} >= 8)"
+                        )
+
+                        if is_in_new_assignments:
+                            assignments = [a for a in assignments if a.resource_id != winner.id]
+                            incident_fulfilled[p_src_inc.id][res_type] = max(
+                                0, incident_fulfilled[p_src_inc.id].get(res_type, 1) - 1
+                            )
+
+                        traces.append(
+                            TraceEntry(
+                                agent="allocation",
+                                step="preemption",
+                                detail=winner_rule,
+                                used_llm=False,
+                                fallback_used=False,
+                                at_min=clock_min,
+                            )
+                        )
+
+                # Process final decision for this slot
+                if winner is not None:
                     assigned_resource_ids.add(winner.id)
                     incident_fulfilled[inc.id][res_type] = incident_fulfilled[inc.id].get(res_type, 0) + 1
 
@@ -328,19 +418,39 @@ def allocate(
                         distance_km=dist,
                         locked=False,
                         approved=False,
-                        reason=f"Assigned nearest available {res_type.value} {winner.id} (ETA {round(winner_eta, 1)}m) to incident {inc.id}",
+                        reason=winner_rule,
                     )
                     assignments.append(asgn)
 
-                    cand_summary = ", ".join(f"{r.id}:{round(e, 1)}m" for r, e in eligible)
                     traces.append(
                         TraceEntry(
                             agent="allocation",
                             step="assignment",
-                            detail=(
-                                f"Assigned {winner.id} to {inc.id} (ETA: {round(winner_eta, 1)}m, limit: {max_eta}m). "
-                                f"Considered: [{cand_summary}]. Rule: nearest eligible by ETA."
-                            ),
+                            detail=f"Assigned {winner.id} to {inc.id} (ETA: {round(winner_eta, 1)}m, limit: {max_eta}m). {winner_rule}",
+                            used_llm=False,
+                            fallback_used=False,
+                            at_min=clock_min,
+                        )
+                    )
+                else:
+                    missing_for_inc[res_type] = missing_for_inc.get(res_type, 0) + 1
+                    if candidates:
+                        cand_desc = ", ".join(
+                            f"{r.id} (ETA {round(e, 1)}m > max {max_eta}m)"
+                            for r, e in sorted(candidates, key=lambda x: (x[1], x[0].id))
+                        )
+                        detail_msg = (
+                            f"No eligible {res_type.value} within max ETA {max_eta}m for incident {inc.id} "
+                            f"(tier {inc.tier.value}). Candidates exceeded limit: [{cand_desc}]"
+                        )
+                    else:
+                        detail_msg = f"No available or preemptible {res_type.value} for incident {inc.id}. Slot unmet."
+
+                    traces.append(
+                        TraceEntry(
+                            agent="allocation",
+                            step="unmet_requirement",
+                            detail=detail_msg,
                             used_llm=False,
                             fallback_used=False,
                             at_min=clock_min,
@@ -371,7 +481,7 @@ def allocate(
     return plan, traces
 
 
-class AllocationSubAgent:
+class AllocationSubAgent(SubAgent):
     """Allocation subagent adhering to the SubAgent protocol."""
 
     name: str = "allocation"
@@ -383,5 +493,6 @@ class AllocationSubAgent:
         return SubAgentResult(payload={"plan": plan}, traces=traces)
 
 
-# Module-level agent instance
+# Module-level aliases
+AllocationAgent = AllocationSubAgent
 allocation_agent = AllocationSubAgent()

@@ -422,7 +422,23 @@ class AssessmentSubAgent:
                 )
             )
 
+        if not traces:
+            traces.append(
+                TraceEntry(
+                    agent=self.name,
+                    step="intake_check",
+                    detail="Assessed intake trigger: no new incidents in payload",
+                    used_llm=False,
+                    fallback_used=False,
+                    at_min=clock_min,
+                )
+            )
+
         return SubAgentResult(
             payload={"incidents": assessed_incidents},
             traces=traces,
         )
+
+
+AssessmentAgent = AssessmentSubAgent
+assessment_agent = AssessmentSubAgent()

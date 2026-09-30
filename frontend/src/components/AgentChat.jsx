@@ -63,17 +63,19 @@ export default function AgentChat({
   messages = null,
   title = "Agent Communications Feed",
 }) {
-  const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const prevCountRef = useRef(0);
   const [filterAgent, setFilterAgent] = useState('ALL');
 
   const messageList = messages !== null ? messages : mockMessages;
 
-  // Auto-scroll to newest on message update
+  // Auto-scroll inside chat container only when new messages are added
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (messageList.length > prevCountRef.current && chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messageList]);
+    prevCountRef.current = messageList.length;
+  }, [messageList.length]);
 
   const filteredMessages = messageList.filter((msg) => {
     if (filterAgent === 'ALL') return true;
@@ -84,21 +86,21 @@ export default function AgentChat({
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl flex flex-col h-full text-slate-100 overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3">
+      <div className="px-4 py-2.5 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-2.5">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-white flex items-center gap-2">
+          <h2 className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
             <span>💬</span> {title}
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-[11px] text-slate-400 mt-0.5">
             Inter-agent messaging, trigger logs, and dispatch notifications
           </p>
         </div>
 
         {/* Filter by Agent */}
-        <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded-lg border border-slate-800 text-xs">
+        <div className="flex items-center gap-1 bg-slate-900/80 p-0.5 rounded-lg border border-slate-800 text-[11px]">
           <button
             onClick={() => setFilterAgent('ALL')}
-            className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+            className={`px-2 py-0.5 rounded-md font-medium transition-all ${
               filterAgent === 'ALL'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -110,7 +112,7 @@ export default function AgentChat({
             <button
               key={ag}
               onClick={() => setFilterAgent(ag)}
-              className={`px-2 py-1 rounded-md font-medium transition-all capitalize ${
+              className={`px-1.5 py-0.5 rounded-md font-medium transition-all capitalize ${
                 filterAgent === ag
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -123,14 +125,14 @@ export default function AgentChat({
       </div>
 
       {/* Chat Messages Feed */}
-      <div className="p-5 overflow-y-auto space-y-3.5 flex-1 max-h-[500px]">
+      <div ref={chatContainerRef} className="p-3 overflow-y-auto space-y-2 flex-1 max-h-[240px]">
         {filteredMessages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center p-8 border border-dashed border-slate-800 rounded-xl bg-slate-950/30">
-            <div className="w-12 h-12 rounded-full bg-slate-800/60 flex items-center justify-center text-xl mb-2 text-slate-400">
+          <div className="flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-xl bg-slate-950/30">
+            <div className="w-10 h-10 rounded-full bg-slate-800/60 flex items-center justify-center text-lg mb-1.5 text-slate-400">
               🤖
             </div>
-            <h3 className="text-sm font-semibold text-slate-300">No Messages Logged</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm">
+            <h3 className="text-xs font-semibold text-slate-300">No Messages Logged</h3>
+            <p className="text-[11px] text-slate-500 mt-0.5 max-w-sm">
               {filterAgent === 'ALL'
                 ? 'Inter-agent communication will stream in real-time as scenario events occur.'
                 : `No messages currently logged for "${filterAgent}".`}
@@ -172,7 +174,6 @@ export default function AgentChat({
             );
           })
         )}
-        <div ref={messagesEndRef} />
       </div>
     </div>
   );

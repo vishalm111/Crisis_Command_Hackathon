@@ -105,29 +105,29 @@ export default function IncidentCards({
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl flex flex-col h-full text-slate-100 overflow-hidden">
       {/* Header & Filter Controls */}
-      <div className="px-5 py-4 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3">
+      <div className="px-4 py-2.5 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-2.5">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-white flex items-center gap-2">
+          <h2 className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
             <span>🚨</span> Active Incidents
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-[11px] text-slate-400 mt-0.5">
             Real-time assessment, priority scoring, and confirmation status
           </p>
         </div>
 
         {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-slate-900/80 p-1 rounded-lg border border-slate-800">
+        <div className="flex flex-wrap items-center gap-1 bg-slate-900/80 p-0.5 rounded-lg border border-slate-800 text-xs">
           {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'CONFIRMATION'].map((tab) => (
             <button
               key={tab}
               onClick={() => setFilterTier(tab)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${
                 filterTier === tab
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
               }`}
             >
-              {tab === 'CONFIRMATION' ? 'Needs Review ⚠️' : tab}
+              {tab === 'CONFIRMATION' ? 'Review ⚠️' : tab}
             </button>
           ))}
         </div>
@@ -135,7 +135,7 @@ export default function IncidentCards({
 
       {/* Global Error Banner */}
       {escalateError && (
-        <div className="mx-5 mt-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+        <div className="mx-4 mt-2.5 p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
           <span>{escalateError}</span>
           <button
             onClick={() => setEscalateError(null)}
@@ -147,14 +147,14 @@ export default function IncidentCards({
       )}
 
       {/* Incidents Grid / List */}
-      <div className="p-5 overflow-y-auto space-y-4 flex-1">
+      <div className="p-3 overflow-y-auto space-y-2.5 flex-1 max-h-[380px]">
         {filteredIncidents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center p-8 border border-dashed border-slate-800 rounded-xl bg-slate-950/30">
-            <div className="w-12 h-12 rounded-full bg-slate-800/60 flex items-center justify-center text-xl mb-2 text-slate-400">
+          <div className="flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-xl bg-slate-950/30">
+            <div className="w-10 h-10 rounded-full bg-slate-800/60 flex items-center justify-center text-lg mb-1.5 text-slate-400">
               🚒
             </div>
-            <h3 className="text-sm font-semibold text-slate-300">No Incidents Found</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm">
+            <h3 className="text-xs font-semibold text-slate-300">No Incidents Found</h3>
+            <p className="text-[11px] text-slate-500 mt-0.5 max-w-sm">
               {filterTier === 'ALL'
                 ? 'No active emergencies recorded. Use the Add Incident form to report a new event.'
                 : `No incidents currently match the "${filterTier}" filter criteria.`}
@@ -175,7 +175,7 @@ export default function IncidentCards({
               <div
                 key={incident.id}
                 onClick={() => onSelectIncident && onSelectIncident(incident)}
-                className={`bg-slate-950/70 border rounded-xl p-4 transition-all hover:border-slate-700 shadow-md ${
+                className={`bg-slate-950/70 border rounded-xl p-3 transition-all hover:border-slate-700 shadow-md ${
                   incident.needs_confirmation
                     ? 'border-amber-500/40 bg-amber-950/10'
                     : 'border-slate-800'

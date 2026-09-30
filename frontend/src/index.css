@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+.custom-map-pill {
+  background: transparent !important;
+  border: none !important;
+}

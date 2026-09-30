@@ -60,26 +60,26 @@ export default function AlertsPanel({
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl flex flex-col h-full text-slate-100 overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3">
+      <div className="px-4 py-2.5 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-2.5">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-white flex items-center gap-2">
+          <h2 className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
             <span>🔔</span> System Alerts
             {criticalCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-500 text-white animate-pulse">
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500 text-white animate-pulse">
                 {criticalCount} Critical
               </span>
             )}
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Operational warnings, resource failures, and preemption notifications (newest first)
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            Operational warnings, resource failures, and preemption logs
           </p>
         </div>
 
         {/* Level Filters */}
-        <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-lg border border-slate-800 text-xs">
+        <div className="flex items-center gap-1 bg-slate-900/80 p-0.5 rounded-lg border border-slate-800 text-[11px]">
           <button
             onClick={() => setFilterLevel('ALL')}
-            className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+            className={`px-2 py-0.5 rounded-md font-medium transition-all ${
               filterLevel === 'ALL'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -89,7 +89,7 @@ export default function AlertsPanel({
           </button>
           <button
             onClick={() => setFilterLevel('CRITICAL')}
-            className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+            className={`px-2 py-0.5 rounded-md font-medium transition-all ${
               filterLevel === 'CRITICAL'
                 ? 'bg-rose-600 text-white shadow-sm'
                 : 'text-rose-400 hover:text-rose-200 hover:bg-slate-800/60'
@@ -99,7 +99,7 @@ export default function AlertsPanel({
           </button>
           <button
             onClick={() => setFilterLevel('WARNING')}
-            className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+            className={`px-2 py-0.5 rounded-md font-medium transition-all ${
               filterLevel === 'WARNING'
                 ? 'bg-amber-600 text-white shadow-sm'
                 : 'text-amber-400 hover:text-amber-200 hover:bg-slate-800/60'
@@ -109,7 +109,7 @@ export default function AlertsPanel({
           </button>
           <button
             onClick={() => setFilterLevel('INFO')}
-            className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+            className={`px-2 py-0.5 rounded-md font-medium transition-all ${
               filterLevel === 'INFO'
                 ? 'bg-sky-600 text-white shadow-sm'
                 : 'text-sky-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -121,7 +121,7 @@ export default function AlertsPanel({
       </div>
 
       {/* Alerts Feed */}
-      <div className="p-5 overflow-y-auto space-y-3 flex-1">
+      <div className="p-3 overflow-y-auto space-y-2 flex-1 max-h-[260px]">
         {filteredAlerts.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center p-8 border border-dashed border-slate-800 rounded-xl bg-slate-950/30">
             <div className="w-12 h-12 rounded-full bg-slate-800/60 flex items-center justify-center text-xl mb-2 text-slate-400">
