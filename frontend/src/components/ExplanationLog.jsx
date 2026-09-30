@@ -54,7 +54,7 @@ export default function ExplanationLog({
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl flex flex-col h-full text-slate-100 overflow-hidden">
+    <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl flex flex-col text-slate-100 overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3">
         <div>

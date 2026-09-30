@@ -37,7 +37,7 @@ export default function PlanPanel({
   const incidentMap = new Map((incidents || []).map((inc) => [inc.id, inc]));
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden text-slate-100 flex flex-col h-full">
+    <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden text-slate-100 flex flex-col">
       {/* Header */}
       <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
         <div>

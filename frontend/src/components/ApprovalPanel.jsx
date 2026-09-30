@@ -25,7 +25,7 @@ export default function ApprovalPanel({
   // Graceful empty state when approval is null or not pending
   if (!approval || approval.status !== "pending") {
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl text-slate-100 flex flex-col justify-center items-center text-center h-full min-h-[220px]">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl text-slate-100 flex flex-col justify-center items-center text-center min-h-[220px]">
         <div className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-xl mb-3 text-slate-400">
           🛡️
         </div>
@@ -82,7 +82,7 @@ export default function ApprovalPanel({
   };
 
   return (
-    <div className="bg-slate-900 border-2 border-amber-500/60 rounded-xl shadow-2xl overflow-hidden text-slate-100 flex flex-col h-full animate-in fade-in duration-200">
+    <div className="bg-slate-900 border-2 border-amber-500/60 rounded-xl shadow-2xl overflow-hidden text-slate-100 flex flex-col animate-in fade-in duration-200">
       {/* High Alert Header */}
       <div className="px-5 py-4 bg-amber-500/10 border-b border-amber-500/30 flex items-center justify-between">
         <div className="flex items-center gap-2.5">

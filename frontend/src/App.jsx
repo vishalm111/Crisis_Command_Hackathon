@@ -39,7 +39,7 @@ function App() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+        <div className="h-screen bg-gray-50 flex flex-col font-sans overflow-hidden">
             <SafetyBanner />
             <Header />
             {error && (
@@ -47,15 +47,16 @@ function App() {
                     Backend connection error: {error.message}
                 </div>
             )}
-            <div className="flex-1 p-4 grid grid-cols-12 gap-4">
-                <div className="col-span-12">
+            <div className="flex-1 p-4 grid grid-cols-12 gap-4 min-h-0 overflow-hidden">
+                <div className="col-span-12 shrink-0">
                    <SimulationControls state={state} />
                 </div>
-                <div className="col-span-3 flex flex-col gap-4">
+                <div className="col-span-3 flex flex-col gap-4 overflow-y-auto pr-1 pb-4">
                     <IncidentCards incidents={state?.incidents} onEscalate={handleEscalate} />
                     <AlertsPanel alerts={state?.alerts} />
+                    <WhatIfPanel resources={state?.resources} incidents={state?.incidents} />
                 </div>
-                <div className="col-span-6 flex flex-col gap-4">
+                <div className="col-span-6 flex flex-col gap-4 overflow-y-auto pr-1 pb-4">
                     <MapView state={state} />
                     <PlanPanel plan={state?.current_plan} />
                     <PlanDiff 
@@ -64,7 +65,7 @@ function App() {
                         metricsAfter={state?.approval?.proposed_plan?.metrics} 
                     />
                 </div>
-                <div className="col-span-3 flex flex-col gap-4">
+                <div className="col-span-3 flex flex-col gap-4 overflow-y-auto pr-1 pb-4">
                     <ApprovalPanel 
                         approval={state?.approval} 
                         onApprove={handleApprove}
@@ -78,7 +79,6 @@ function App() {
                     />
                     <ExplanationLog explanations={state?.explanations} />
                     <AgentChat messages={state?.messages} />
-                    <WhatIfPanel resources={state?.resources} incidents={state?.incidents} />
                 </div>
             </div>
         </div>
