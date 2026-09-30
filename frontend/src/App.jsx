@@ -1,7 +1,6 @@
 import React from 'react';
 import { RouterProvider, useRouter } from './router/Router';
 
-import LandingPage from './pages/LandingPage';
 import CommandCenter from './pages/CommandCenter';
 import InteractiveDemo from './pages/InteractiveDemo';
 import AboutPage from './pages/AboutPage';
@@ -12,6 +11,8 @@ function RouteSwitch() {
 
   switch (path) {
     case '/app':
+    case '/':
+    default:
       return <CommandCenter />;
     case '/demo':
       return <InteractiveDemo />;
@@ -19,9 +20,6 @@ function RouteSwitch() {
       return <AboutPage />;
     case '/docs':
       return <DocsPage />;
-    case '/':
-    default:
-      return <LandingPage />;
   }
 }
 

@@ -53,22 +53,26 @@ export default function CommandCenter() {
     <div className="min-h-screen bg-slate-950 flex flex-col font-sans text-slate-100 selection:bg-indigo-500/30">
       <SafetyBanner />
       
-      {/* Portal Quick Navigation Bar */}
+      {/* Top Navigation Bar */}
       <div className="bg-slate-900/90 border-b border-slate-800/80 px-4 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors font-medium group"
-            title="Return to Public Website"
-          >
-            <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
-            <span>Crisis Command Portal</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-gradient-to-br from-indigo-600 to-cyan-500 flex items-center justify-center">
+              <span className="text-[10px] font-black text-white">CC</span>
+            </div>
+            <span className="text-slate-200 font-mono text-[11px] tracking-wider uppercase font-semibold">
+              Crisis Command
+            </span>
+            <span className="text-slate-600">·</span>
+            <span className="text-slate-400 font-mono text-[10px]">
+              Team Neural Ninjas
+            </span>
+          </div>
           <span className="text-slate-700">|</span>
           <div className="flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-slate-300 font-mono text-[11px] tracking-wider uppercase font-semibold">
-              Live Operations Cockpit
+            <span className="text-emerald-400 font-mono text-[11px] tracking-wider uppercase font-semibold">
+              Live Dashboard
             </span>
           </div>
         </div>
@@ -78,13 +82,13 @@ export default function CommandCenter() {
             onClick={() => navigate('/demo')}
             className="text-[11px] text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-950/40 border border-indigo-500/20"
           >
-            <span>▶</span> Interactive Walkthrough
+            <span>▶</span> Scenario Walkthrough
           </button>
           <button
             onClick={() => navigate('/docs')}
             className="text-[11px] text-slate-400 hover:text-slate-200 hover:underline px-2 py-0.5"
           >
-            API &amp; Architecture
+            Docs
           </button>
         </div>
       </div>
