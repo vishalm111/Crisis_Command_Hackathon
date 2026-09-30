@@ -244,7 +244,7 @@ export default function AgentChat({
                         </span>
                       </div>
                       <div className={`p-2 rounded-lg border text-xs leading-relaxed ${theme.bubble}`}>
-                        {msg.text}
+                        {msg.text || msg.detail}
                       </div>
                     </div>
                   </div>

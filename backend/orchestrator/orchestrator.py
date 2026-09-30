@@ -347,6 +347,16 @@ class Orchestrator:
                 for ct in conflict_traces:
                     self.engine.add_trace(ct)
 
+                if new_plan.unmet:
+                    total_missing = sum(sum(u.missing.values()) for u in new_plan.unmet)
+                    self.engine.add_alert(Alert(
+                        id=f"alt_unmet_{int(time.time() * 1000)}",
+                        level=AlertLevel.warning,
+                        title="Unmet Resource Capacity",
+                        text=f"{len(new_plan.unmet)} incident(s) have unmet resource requirements ({total_missing} total slots missing).",
+                        at_min=self.engine.get_state().clock_min
+                    ))
+
                 # Evaluate approval gate (P1-A2)
                 gate_decision = evaluate(
                     current_state.current_plan, new_plan, self.engine.get_state()

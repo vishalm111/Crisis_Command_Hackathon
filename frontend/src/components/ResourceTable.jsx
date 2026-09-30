@@ -26,7 +26,8 @@ const STATUS_CONFIG = {
 const TYPE_CONFIG = {
   ambulance: { icon: '🚑', label: 'Ambulance' },
   fire_engine: { icon: '🚒', label: 'Fire Engine' },
-  rescue_team: { icon: '👷', label: 'Rescue Team' },
+  rescue_unit: { icon: '👷', label: 'Rescue Unit' },
+  hazmat_team: { icon: '☣️', label: 'Hazmat Team' },
 };
 
 /**
@@ -89,7 +90,8 @@ export default function ResourceTable({
             <option value="ALL">All Types</option>
             <option value="ambulance">Ambulances</option>
             <option value="fire_engine">Fire Engines</option>
-            <option value="rescue_team">Rescue Teams</option>
+            <option value="rescue_unit">Rescue Units</option>
+            <option value="hazmat_team">Hazmat Teams</option>
           </select>
 
           <select
