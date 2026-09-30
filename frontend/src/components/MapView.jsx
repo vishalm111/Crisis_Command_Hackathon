@@ -1,5 +1,5 @@
 import React, { Fragment, useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import mockState from '../../../contracts/mock_state.json';
@@ -83,7 +83,7 @@ export default function MapView({ state }) {
         );
     }
 
-    const center = [12.97, 77.59]; // Central Bengaluru
+    const center = [12.965, 77.605]; // Centered across Bengaluru incident network (MG Road, Shivajinagar, Indiranagar, Koramangala)
 
     return (
         <div
@@ -130,21 +130,29 @@ export default function MapView({ state }) {
                     />
                     
                     {/* Incidents */}
-                    {data.incidents.map(inc => (
-                        <Marker 
-                            key={`inc-${inc.id}`} 
-                            position={[inc.location.lat, inc.location.lng]}
-                            icon={createIcon(typeToEmoji[inc.type] || '❓', getIncidentColor(inc.tier), inc.id, inc.tier === 'critical' || inc.severity >= 5)}
-                        >
-                            <Popup>
-                                <div className="text-xs font-sans text-slate-900">
-                                    <strong className="text-sm">{inc.id} ({inc.type})</strong><br/>
-                                    <span className="font-semibold">Tier:</span> {inc.tier}<br/>
-                                    <span className="text-slate-600">{inc.description}</span>
-                                </div>
-                            </Popup>
-                        </Marker>
-                    ))}
+                    {data.incidents.map(inc => {
+                        const locLabel = inc.location?.label ? inc.location.label.replace(/^Unverified:\s*/i, '') : '';
+                        const markerText = locLabel ? `${inc.id} • ${locLabel}` : inc.id;
+                        return (
+                            <Marker 
+                                key={`inc-${inc.id}-${inc.location?.lat}-${inc.location?.lng}`} 
+                                position={[inc.location.lat, inc.location.lng]}
+                                icon={createIcon(typeToEmoji[inc.type] || '❓', getIncidentColor(inc.tier), markerText, inc.tier === 'critical' || inc.severity >= 5)}
+                            >
+                                <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
+                                    <span className="font-bold">{inc.id}: {inc.location?.label || 'Incident'}</span> ({inc.tier})
+                                </Tooltip>
+                                <Popup>
+                                    <div className="text-xs font-sans text-slate-900">
+                                        <strong className="text-sm">{inc.id} ({inc.type})</strong><br/>
+                                        <span className="font-semibold text-indigo-700">📍 {inc.location?.label || 'Bengaluru'}</span><br/>
+                                        <span className="font-semibold">Tier:</span> {inc.tier}<br/>
+                                        <span className="text-slate-600">{inc.description}</span>
+                                    </div>
+                                </Popup>
+                            </Marker>
+                        );
+                    })}
 
                     {/* Facilities */}
                     {data.facilities && data.facilities.map(fac => (

@@ -30,7 +30,7 @@ const STORY_STEPS = [
   {
     step: 4,
     title: '4. Critical Incident & Preemption',
-    narration: 'Major building collapse (I4) with severity 5. Agent preempts a unit from a lower-tier incident.',
+    narration: 'Major building collapse in Koramangala (I4) with severity 5. Agent preempts a unit from a lower-tier incident.',
     action: async (post) => {
       await post('/scenario/next', {});
     },

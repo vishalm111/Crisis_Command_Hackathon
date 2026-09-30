@@ -153,7 +153,7 @@ def create_incident(req: IncidentCreateRequest) -> Incident:
             type=req.type or IncidentType.medical,
             severity=req.severity or 2,
             description=req.free_text,
-            location=req.location or LatLng(lat=12.9716, lng=77.5946, label="Reported location"),
+            location=req.location or LatLng(lat=12.9784, lng=77.6408, label="Reported location"),
             people_affected=req.people_affected or 1,
             required=req.required or {ResourceType.ambulance: 1},
             status=IncidentStatus.new,

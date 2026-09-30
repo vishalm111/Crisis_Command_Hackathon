@@ -9,7 +9,7 @@
       "location": {
         "lat": 12.9716,
         "lng": 77.5946,
-        "label": "MG Road Metro"
+        "label": "MG Road"
       },
       "people_affected": 2,
       "required": {
@@ -29,9 +29,9 @@
       "severity": 4,
       "description": "Commercial warehouse fire with hazardous fumes",
       "location": {
-        "lat": 12.965,
-        "lng": 77.6,
-        "label": "Shivajinagar Depot"
+        "lat": 12.9857,
+        "lng": 77.6057,
+        "label": "Shivajinagar"
       },
       "people_affected": 6,
       "required": {
@@ -52,9 +52,9 @@
       "severity": 2,
       "description": "Unconfirmed collapse report near Richmond flyover",
       "location": {
-        "lat": 12.961,
-        "lng": 77.597,
-        "label": "Richmond Circle Flyover"
+        "lat": 12.9784,
+        "lng": 77.6408,
+        "label": "Indiranagar"
       },
       "people_affected": 1,
       "required": {
@@ -75,11 +75,11 @@
       "id": "I4",
       "type": "rescue",
       "severity": 5,
-      "description": "Commercial complex structural collapse with trapped occupants",
+      "description": "Commercial complex structural collapse with trapped occupants in Koramangala",
       "location": {
-        "lat": 12.975,
-        "lng": 77.605,
-        "label": "Brigade Towers"
+        "lat": 12.9350,
+        "lng": 77.6200,
+        "label": "Koramangala"
       },
       "people_affected": 20,
       "required": {

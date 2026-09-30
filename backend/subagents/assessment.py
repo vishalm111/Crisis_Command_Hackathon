@@ -24,12 +24,11 @@ DEFAULT_REQUIRED: dict[IncidentType, dict[ResourceType, int]] = {
 KNOWN_PLACES: dict[str, tuple[float, float, str]] = {
     "mg road metro": (12.9716, 77.5946, "MG Road Metro"),
     "mg road": (12.9716, 77.5946, "MG Road"),
-    "shivajinagar depot": (12.9650, 77.6000, "Shivajinagar Depot"),
-    "shivajinagar": (12.9650, 77.6000, "Shivajinagar"),
+    "shivajinagar depot": (12.9857, 77.6057, "Shivajinagar"),
+    "shivajinagar": (12.9857, 77.6057, "Shivajinagar"),
     "richmond circle flyover": (12.9610, 77.5970, "Richmond Circle Flyover"),
     "richmond circle": (12.9610, 77.5970, "Richmond Circle"),
     "brigade road": (12.9740, 77.6070, "Brigade Road"),
-    "indiranagar": (12.9780, 77.6400, "Indiranagar"),
     "koramangala": (12.9350, 77.6200, "Koramangala"),
     "town hall": (12.9630, 77.5830, "Town Hall"),
     "victoria hospital": (12.9620, 77.5750, "Victoria Hospital"),
@@ -165,7 +164,7 @@ def parse_free_text_rule_based(
         uncertain_fields.append("location")
         prep_match = re.search(r"\b(?:near|at|around|opposite|behind|outside)\s+([a-zA-Z\s]+?)(?:,|\.|$)", lower_text)
         approx_label = f"Unverified: {prep_match.group(0).strip()}" if prep_match else "Unspecified location"
-        location = LatLng(lat=12.9716, lng=77.5946, label=approx_label)
+        location = LatLng(lat=12.9784, lng=77.6408, label=approx_label)
         rules_applied.append("Location rule: vague/unknown location -> needs_confirmation=True, uncertain_fields += location")
 
     # 5. Required Resources from Defaults
@@ -274,18 +273,23 @@ class AssessmentSubAgent:
                     needs_confirmation = True
                     if "location" not in uncertain_fields:
                         uncertain_fields.append("location")
-                    location = LatLng(lat=12.9716, lng=77.5946, label="Unverified location")
+                    location = LatLng(lat=12.9784, lng=77.6408, label="Unverified location")
                 else:
                     norm_label = str(raw_loc_label).strip().lower()
                     if norm_label in KNOWN_PLACES:
                         lat, lng, label = KNOWN_PLACES[norm_label]
                         location = LatLng(lat=lat, lng=lng, label=label)
+                    elif "indiranagar" in norm_label:
+                        needs_confirmation = True
+                        if "location" not in uncertain_fields:
+                            uncertain_fields.append("location")
+                        location = LatLng(lat=12.9784, lng=77.6408, label="Indiranagar (Unverified)")
                     else:
                         # Vague or unrecognized place name -> trigger human confirmation gate
                         needs_confirmation = True
                         if "location" not in uncertain_fields:
                             uncertain_fields.append("location")
-                        location = LatLng(lat=12.9716, lng=77.5946, label=str(raw_loc_label).strip())
+                        location = LatLng(lat=12.9784, lng=77.6408, label=str(raw_loc_label).strip())
 
                 # Required resources
                 req_from_llm = validated_data.get("required")
