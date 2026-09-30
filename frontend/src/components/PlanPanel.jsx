@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import WhyResourceModal from './WhyResourceModal';
 
 /**
  * PlanPanel renders the current or proposed dispatch plan,
@@ -8,14 +9,17 @@ import React from 'react';
  * @param {Object} [props.plan] - Plan object conforming to contract domain model
  * @param {Array} [props.incidents] - Optional list of incidents for metadata lookup
  * @param {Array} [props.resources] - Optional list of resources for name lookup
+ * @param {Object} [props.state] - Full system state
  * @param {string} [props.title="Active Dispatch Plan"] - Title for the panel
  */
 export default function PlanPanel({
   plan = null,
   incidents = [],
   resources = [],
+  state = null,
   title = "Active Dispatch Plan",
 }) {
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
   const currentPlan = plan || {
     id: "none",
     version: 0,
@@ -208,9 +212,16 @@ export default function PlanPanel({
                       </div>
                       {asg.reason && (
                         <div className="text-[11px] text-slate-400 italic">
-                          "{asg.reason}"
+                          &quot;{asg.reason}&quot;
                         </div>
                       )}
+
+                      <button
+                        onClick={() => setSelectedAssignment(asg)}
+                        className="text-[10px] font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-500/30 px-2 py-0.5 rounded transition-colors flex items-center gap-1 ml-auto"
+                      >
+                        <span>💡</span> Why this resource?
+                      </button>
                     </div>
                   </div>
                 );
@@ -219,6 +230,15 @@ export default function PlanPanel({
           )}
         </div>
       </div>
+
+      {/* Feature 8: Explainability Modal */}
+      {selectedAssignment && (
+        <WhyResourceModal
+          assignment={selectedAssignment}
+          state={state}
+          onClose={() => setSelectedAssignment(null)}
+        />
+      )}
     </div>
   );
 }

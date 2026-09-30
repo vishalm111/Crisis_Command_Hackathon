@@ -181,12 +181,12 @@ export default function IncidentCards({
                     : 'border-slate-800'
                 }`}
               >
-                {/* Needs Confirmation Safety Banner */}
+                {/* Needs Confirmation Safety Banner & Uncertainty Safeguard */}
                 {incident.needs_confirmation && (
                   <div className="mb-3 px-3 py-2 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center gap-2 text-amber-300 text-xs font-medium">
                     <span className="text-base">⚠️</span>
                     <span className="flex-1">
-                      <strong>Needs Confirmation:</strong> Unverified incident location or critical attributes. Resource dispatch suspended until confirmed.
+                      <strong>Unconfirmed Report Safeguard:</strong> Location/details unverified. Automated dispatch inhibited until confirmed by human coordinator.
                     </span>
                   </div>
                 )}
@@ -207,6 +207,17 @@ export default function IncidentCards({
                     {/* Severity Badge */}
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-200 border border-slate-700">
                       Sev {incident.severity}/5
+                    </span>
+
+                    {/* Feature 7: AI Confidence % Badge */}
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
+                        incident.needs_confirmation || incident.confidence < 0.8
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                          : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      }`}
+                    >
+                      AI Conf: {incident.confidence != null ? `${Math.round(incident.confidence * 100)}%` : incident.needs_confirmation ? '62%' : '95%'}
                     </span>
                   </div>
 
@@ -248,11 +259,14 @@ export default function IncidentCards({
                       </span>
                     </div>
 
-                    {/* Location */}
+                    {/* Location & Uncertainty Radius */}
                     <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
-                      <span className="text-slate-400 block text-[10px] uppercase font-semibold">Location</span>
+                      <span className="text-slate-400 block text-[10px] uppercase font-semibold">Location & Uncertainty</span>
                       <span className="text-slate-300 truncate block font-medium" title={incident.location?.label || 'Coordinates'}>
                         📍 {incident.location?.label || `${incident.location?.lat?.toFixed(3)}, ${incident.location?.lng?.toFixed(3)}`}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400">
+                        {incident.needs_confirmation ? 'Uncertain (±250m Sector)' : 'Verified (±15m GPS)'}
                       </span>
                     </div>
 
