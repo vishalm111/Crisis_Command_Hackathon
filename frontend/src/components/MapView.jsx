@@ -92,30 +92,30 @@ export default function MapView({ state }) {
                     : 'bg-slate-900 p-3 shadow-xl rounded-xl border border-slate-800 text-slate-100 h-[400px] relative'
             }`}
         >
-            <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                    <h2 className="text-xs sm:text-sm font-semibold tracking-tight text-white flex items-center gap-1.5 truncate">
                         <span>🗺️</span> Bengaluru Emergency Geospatial Map
                     </h2>
                     {isFullscreen && (
-                        <span className="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full">
-                            FULL SCREEN ACTIVE
+                        <span className="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full shrink-0">
+                            FULL SCREEN
                         </span>
                     )}
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="text-[11px] font-mono text-slate-400">
-                        {data.incidents?.length || 0} incidents &bull; {data.resources?.length || 0} units
+                <div className="flex items-center gap-2.5 shrink-0">
+                    <div className="text-[10px] sm:text-[11px] font-mono text-slate-400">
+                        {data.incidents?.length || 0} inc &bull; {data.resources?.length || 0} units
                     </div>
 
                     <button
                         onClick={() => setIsFullscreen(!isFullscreen)}
-                        className="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-2.5 py-1 rounded-lg text-xs font-medium border border-slate-700 transition-all flex items-center gap-1.5 shadow-sm"
+                        className="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-2 py-0.5 rounded-lg text-xs font-medium border border-slate-700 transition-all flex items-center gap-1 shadow-sm"
                         title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Expand to Fullscreen'}
                     >
                         <span>{isFullscreen ? '✕' : '⛶'}</span>
-                        <span>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+                        <span>{isFullscreen ? 'Exit' : 'Fullscreen'}</span>
                     </button>
                 </div>
             </div>

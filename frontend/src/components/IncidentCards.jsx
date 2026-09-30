@@ -241,8 +241,8 @@ export default function IncidentCards({
                     {incident.description || 'Emergency incident reported without specific details.'}
                   </p>
 
-                  {/* Metadata Grid */}
-                  <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  {/* Metadata Grid: 2 columns to prevent crushing inside sidebar */}
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                     {/* Priority Score */}
                     <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
                       <span className="text-slate-400 block text-[10px] uppercase font-semibold">Priority Score</span>

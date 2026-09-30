@@ -47,7 +47,6 @@ export default function CounterfactualLab({ state }) {
 
   const currentPlan = state?.current_plan || {};
   const currentMetrics = currentPlan.metrics || {};
-  const currentAssignments = currentPlan.assignments || [];
 
   const handleRunCounterfactual = async () => {
     const sc = PRESET_SCENARIOS.find((s) => s.id === selectedScenario);
@@ -231,7 +230,9 @@ export default function CounterfactualLab({ state }) {
                 <span>✓</span>
                 <span>Verification: Live State Plan Version remained at v{state?.current_plan?.version}</span>
               </span>
-              <span className="font-bold text-emerald-400">PASS (0 Side Effects)</span>
+              <span className="font-bold text-emerald-400">
+                {isStateUnchanged !== false ? 'PASS (0 Side Effects)' : 'MUTATION DETECTED'}
+              </span>
             </div>
           </div>
         ) : (

@@ -217,28 +217,28 @@ export default function ApprovalPanel({
       </div>
 
       {/* Decision Buttons */}
-      <div className="p-4 bg-slate-950/80 border-t border-slate-800 flex items-center justify-end gap-3">
+      <div className="p-3 bg-slate-950/80 border-t border-slate-800 flex flex-wrap items-center justify-between sm:justify-end gap-2">
         <button
           type="button"
           disabled={isSubmitting}
           onClick={() => handleDecision("reject")}
-          className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider bg-slate-800 hover:bg-rose-900/60 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider bg-slate-800 hover:bg-rose-900/60 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center"
         >
-          {isSubmitting ? "Processing..." : "Reject Proposal"}
+          {isSubmitting ? "Processing..." : "Reject"}
         </button>
 
         <button
           type="button"
           disabled={isSubmitting}
           onClick={() => handleDecision("approve")}
-          className="px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+          className="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5 text-center"
         >
           {isSubmitting ? (
             <span>Executing...</span>
           ) : (
             <>
               <span>✓</span>
-              <span>Approve & Discard Current</span>
+              <span>Approve &amp; Dispatch</span>
             </>
           )}
         </button>

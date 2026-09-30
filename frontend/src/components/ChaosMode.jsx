@@ -61,25 +61,25 @@ export default function ChaosMode({ onAction }) {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden text-slate-100 flex flex-col">
       {/* Header */}
-      <div className="px-4 py-2.5 border-b border-slate-800 bg-slate-950/70 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-base">🌪️</span>
-          <div>
-            <h2 className="text-sm font-semibold tracking-tight text-white flex items-center gap-1.5">
-              Chaos Engineering &bull; Resilience Lab
+      <div className="px-3.5 py-2.5 border-b border-slate-800 bg-slate-950/70 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-base shrink-0">🌪️</span>
+          <div className="min-w-0">
+            <h2 className="text-xs sm:text-sm font-semibold tracking-tight text-white flex items-center gap-1.5 truncate">
+              Chaos Engineering &bull; Resilience
             </h2>
-            <p className="text-[11px] text-slate-400">
-              Stress-test replanning engines against random fleet disruptions & spikes
+            <p className="text-[10px] text-slate-400 truncate">
+              Stress-test replanning against disruptions
             </p>
           </div>
         </div>
         <button
           onClick={handleTriggerChaos}
           disabled={loading}
-          className="bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-semibold px-3 py-1 rounded-lg text-xs shadow-md transition-all flex items-center gap-1.5"
+          className="bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-semibold px-2.5 py-1 rounded-lg text-xs shadow-md transition-all flex items-center gap-1.5 shrink-0"
         >
           <span>{loading ? '💥' : '⚡'}</span>
-          <span>{loading ? 'Injecting...' : 'Inject Chaos Event'}</span>
+          <span>{loading ? 'Injecting...' : 'Inject Chaos'}</span>
         </button>
       </div>
 
