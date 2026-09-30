@@ -1,15 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { postJson } from '../api';
 
-let mockMessages = [];
-try {
-  // eslint-disable-next-line
-  const mockState = require('../../../contracts/mock_state.json');
-  mockMessages = mockState.messages || [];
-} catch (e) {
-  // Graceful fallback
-}
-
 const AGENT_THEMES = {
   orchestrator: {
     name: 'Orchestrator',
@@ -68,7 +59,7 @@ const QUICK_QUESTIONS = [
  * Multi-agent message feed + Feature 13: Interactive Q&A grounded in live state.
  */
 export default function AgentChat({
-  messages = null,
+  messages = [],
   title = 'Agent Communications Feed',
 }) {
   const chatContainerRef = useRef(null);
@@ -81,16 +72,14 @@ export default function AgentChat({
   const [qaLog, setQaLog] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const messageList = messages !== null ? messages : mockMessages;
-
   useEffect(() => {
-    if (activeTab === 'feed' && messageList.length > prevCountRef.current && chatContainerRef.current) {
+    if (activeTab === 'feed' && messages.length > prevCountRef.current && chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-    prevCountRef.current = messageList.length;
-  }, [messageList.length, activeTab]);
+    prevCountRef.current = messages.length;
+  }, [messages.length, activeTab]);
 
-  const filteredMessages = messageList.filter((msg) => {
+  const filteredMessages = messages.filter((msg) => {
     if (filterAgent === 'ALL') return true;
     const cleanName = (msg.agent || '').toLowerCase().replace(/[\s_-]/g, '');
     return cleanName === filterAgent.toLowerCase();
@@ -157,7 +146,7 @@ export default function AgentChat({
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Feed ({messageList.length})
+            Feed ({messages.length})
           </button>
           <button
             onClick={() => setActiveTab('ask')}

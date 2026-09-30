@@ -35,7 +35,7 @@ export default function PlanDiff({
   metricsAfter = null,
 }) {
   // Extract diff from prop or state
-  const activeDiff = diff || state?.latest_diff || state?.approval?.diff || null;
+  const activeDiff = (state?.approval?.status === 'pending' ? state?.approval?.diff : null) || diff || state?.latest_diff || null;
 
   // Extract before and after metrics
   const before = metricsBefore || (state?.plan_history?.length > 0 ? state.plan_history[state.plan_history.length - 1].metrics : null) || state?.current_plan?.metrics;

@@ -1,14 +1,6 @@
 import React, { useState } from 'react';
 
-// Optional fallback to mock_state.json when standalone
-let mockAlerts = [];
-try {
-  // eslint-disable-next-line
-  const mockState = require('../../../contracts/mock_state.json');
-  mockAlerts = mockState.alerts || [];
-} catch (e) {
-  // Graceful fallback
-}
+
 
 const LEVEL_CONFIG = {
   critical: {
@@ -38,12 +30,10 @@ const LEVEL_CONFIG = {
  * AlertsPanel renders operational crisis alerts sorted newest first,
  * with level icons, timestamps, filtering tabs, and graceful empty states.
  */
-export default function AlertsPanel({
-  alerts = null,
-}) {
+export default function AlertsPanel({ alerts = [] }) {
   const [filterLevel, setFilterLevel] = useState('ALL');
 
-  const alertList = alerts !== null ? alerts : mockAlerts;
+  const alertList = alerts || [];
 
   // Sort newest first: by at_min descending
   const sortedAlerts = [...alertList].sort((a, b) => (b.at_min ?? 0) - (a.at_min ?? 0));

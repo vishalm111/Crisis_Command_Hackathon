@@ -238,7 +238,7 @@ export default function ApprovalPanel({
           ) : (
             <>
               <span>✓</span>
-              <span>Approve &amp; Dispatch</span>
+              <span>Approve {diff?.to_version ? `v${diff.to_version}` : 'Plan'} &rarr; Replace {diff?.from_version ? `v${diff.from_version}` : 'Current'}</span>
             </>
           )}
         </button>

@@ -24,7 +24,7 @@ export default function CrisisScoreboard({ state }) {
       100 -
         criticalCount * 18 -
         (metrics.unresolved_count || 0) * 10 -
-        (approval?.required ? 15 : 0)
+        (approval?.status === 'pending' ? 15 : 0)
     )
   );
 
@@ -149,12 +149,12 @@ export default function CrisisScoreboard({ state }) {
           <div className="flex items-center justify-center gap-1.5 my-1 min-w-0">
             <span
               className={`text-xs font-bold font-mono px-2 py-0.5 rounded border truncate ${
-                approval?.required
+                approval?.status === 'pending'
                   ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
                   : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
               }`}
             >
-              {approval?.required ? 'ACTION NEEDED' : 'CLEAR'}
+              {approval?.status === 'pending' ? 'APPROVAL REQUIRED' : 'CLEAR'}
             </span>
           </div>
           <span className="text-[10px] text-slate-500 font-mono truncate">

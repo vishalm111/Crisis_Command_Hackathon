@@ -66,7 +66,8 @@ export default function ImpactPredictor({ state }) {
       .map((inc) => {
         const incAssignments = assignments.filter((a) => a.incident_id === inc.id);
         const maxEta = incAssignments.length > 0 ? Math.max(...incAssignments.map((a) => a.eta_min || 0)) : 999;
-        const isCovered = incAssignments.length > 0;
+        const requiredCount = inc.required ? Object.values(inc.required).reduce((a, b) => a + b, 0) : 0;
+        const isCovered = incAssignments.length >= requiredCount && requiredCount > 0;
         const riskScore =
           inc.severity * 20 +
           (isCovered ? 0 : 35) +
