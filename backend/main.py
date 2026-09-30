@@ -255,7 +255,7 @@ def approve_request(approval_id: str, req: Optional[ApprovalDecisionRequest] = N
                 )
             )
 
-        engine.set_plan(proposed, archive_current=True)
+        engine.set_plan(proposed, archive_current=True, diff=state.approval.diff)
         engine.set_proposed_plan(None)
 
     # Inform orchestrator of approval decision

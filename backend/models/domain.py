@@ -163,6 +163,7 @@ class CrisisState(BaseModel):
     proposed_plan: Optional[Plan] = None
     approval: Optional[ApprovalRequest] = None
     plan_history: list[Plan] = Field(default_factory=list)
+    latest_diff: Optional[PlanDiff] = None
     constraints: list[Constraint] = Field(default_factory=list)
     traces: list[TraceEntry] = Field(default_factory=list)
     explanations: list[Explanation] = Field(default_factory=list)
