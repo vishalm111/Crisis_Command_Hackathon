@@ -275,7 +275,7 @@ export default function CommandCenter() {
 
             {sideTab === 'ops' && (
               <>
-                <ResourceTable state={state} />
+                <ResourceTable state={state} onAction={refresh} />
                 <AgentChat messages={state?.messages} />
                 <SystemHealth state={state} error={error} />
               </>

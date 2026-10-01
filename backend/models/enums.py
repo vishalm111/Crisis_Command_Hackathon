@@ -30,8 +30,10 @@ class IncidentStatus(str, Enum):
 
 class ResourceStatus(str, Enum):
     available = "available"
+    assigned = "assigned"
     en_route = "en_route"
     on_scene = "on_scene"
+    completed = "completed"
     unavailable = "unavailable"
 
 

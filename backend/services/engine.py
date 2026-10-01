@@ -123,11 +123,33 @@ class SimulationEngine:
         for r in self._state.resources:
             if r.id == resource_id:
                 r.status = status
-                if assigned_incident_id is not None or status == ResourceStatus.available:
+                if assigned_incident_id is not None:
                     r.assigned_incident_id = assigned_incident_id
+                elif status in (ResourceStatus.available, ResourceStatus.completed):
+                    r.assigned_incident_id = None
                 self.log(f"t={self._state.clock_min}: Resource {resource_id} status changed to {status.value}")
                 return
         raise KeyError(f"Resource with id {resource_id} not found")
+
+    def _sync_plan_resources(self, plan: Plan) -> None:
+        """Synchronizes resource status and assignments with the active plan."""
+        assigned_map: dict[str, str] = {a.resource_id: a.incident_id for a in plan.assignments}
+        for r in self._state.resources:
+            if r.status == ResourceStatus.unavailable:
+                continue
+            if r.id in assigned_map:
+                r.assigned_incident_id = assigned_map[r.id]
+                # If resource was available, assigned, or completed, promote to en_route
+                if r.status in (ResourceStatus.available, ResourceStatus.assigned, ResourceStatus.completed):
+                    r.status = ResourceStatus.en_route
+            else:
+                # If resource was assigned or en_route to something that's no longer in the plan
+                if r.status in (ResourceStatus.assigned, ResourceStatus.en_route):
+                    r.status = ResourceStatus.available
+                    r.assigned_incident_id = None
+                elif r.status == ResourceStatus.on_scene and r.assigned_incident_id not in assigned_map.values():
+                    r.status = ResourceStatus.available
+                    r.assigned_incident_id = None
 
     def set_plan(
         self,
@@ -145,6 +167,7 @@ class SimulationEngine:
                 from backend.orchestrator.approval_gate import diff_plans
                 self._state.latest_diff = diff_plans(old_plan, plan)
         self._state.current_plan = plan
+        self._sync_plan_resources(plan)
         self.log(f"t={self._state.clock_min}: Plan v{plan.version} ({plan.id}) committed as current plan")
 
     def get_last_plan_diff(self) -> Optional[PlanDiff]:

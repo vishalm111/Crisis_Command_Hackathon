@@ -19,7 +19,7 @@ from backend.models.domain import (
     TraceEntry,
     Unmet,
 )
-from backend.models.enums import AlertLevel, ResourceType, Tier, TriggerKind
+from backend.models.enums import AlertLevel, ResourceStatus, ResourceType, Tier, TriggerKind
 from backend.orchestrator.workflow import run_flow
 from backend.services.engine import SimulationEngine, get_engine
 from backend.subagents.base import TriggerContext
@@ -304,6 +304,11 @@ class Orchestrator:
                 self.engine.add_trace(t)
             for a in alerts:
                 self.engine.add_alert(a)
+            if "positions" in payload and isinstance(payload["positions"], dict):
+                for rid, pos in payload["positions"].items():
+                    res = next((r for r in state.resources if r.id == rid), None)
+                    if res:
+                        res.location = pos
             if "explanation" in payload and isinstance(payload["explanation"], Explanation):
                 self.engine.add_explanation(payload["explanation"])
             return self.engine.get_state()

@@ -47,15 +47,31 @@ const getResourceColor = (status) => {
 };
 
 /**
- * Automatically recalculates Leaflet view bounds and tiles on fullscreen toggle
+/**
+ * Automatically recalculates Leaflet view bounds and tiles on fullscreen toggle and window resize
  */
 function MapResizer({ isFullscreen }) {
     const map = useMap();
     useEffect(() => {
-        const timeout = setTimeout(() => {
-            map.invalidateSize();
-        }, 120);
-        return () => clearTimeout(timeout);
+        const invalidate = () => {
+            if (map) {
+                map.invalidateSize();
+            }
+        };
+
+        // Immediate and staged invalidations ensure tiles render without gray blanks
+        invalidate();
+        const t1 = setTimeout(invalidate, 50);
+        const t2 = setTimeout(invalidate, 150);
+        const t3 = setTimeout(invalidate, 300);
+
+        window.addEventListener('resize', invalidate);
+        return () => {
+            clearTimeout(t1);
+            clearTimeout(t2);
+            clearTimeout(t3);
+            window.removeEventListener('resize', invalidate);
+        };
     }, [isFullscreen, map]);
     return null;
 }
@@ -74,6 +90,18 @@ export default function MapView({ state }) {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isFullscreen]);
 
+    // Lock body scrolling when fullscreen overlay is active
+    useEffect(() => {
+        if (isFullscreen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isFullscreen]);
+
     if (!data || !data.incidents) {
         return (
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 h-[380px] flex items-center justify-center">
@@ -88,7 +116,7 @@ export default function MapView({ state }) {
         <div
             className={`transition-all duration-200 flex flex-col ${
                 isFullscreen
-                    ? 'fixed inset-0 z-[9999] bg-slate-950 p-4 h-screen w-screen shadow-2xl'
+                    ? 'fixed inset-0 z-[9999] bg-slate-950 p-4 h-screen w-screen overflow-hidden shadow-2xl'
                     : 'bg-slate-900 p-3 shadow-xl rounded-xl border border-slate-800 text-slate-100 h-[400px] relative'
             }`}
         >
@@ -111,11 +139,15 @@ export default function MapView({ state }) {
 
                     <button
                         onClick={() => setIsFullscreen(!isFullscreen)}
-                        className="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-2 py-0.5 rounded-lg text-xs font-medium border border-slate-700 transition-all flex items-center gap-1 shadow-sm"
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 shadow-sm ${
+                            isFullscreen
+                                ? 'bg-rose-600 hover:bg-rose-500 text-white border-rose-500'
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-700'
+                        }`}
                         title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Expand to Fullscreen'}
                     >
                         <span>{isFullscreen ? '✕' : '⛶'}</span>
-                        <span>{isFullscreen ? 'Exit' : 'Fullscreen'}</span>
+                        <span>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
                     </button>
                 </div>
             </div>

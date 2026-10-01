@@ -157,7 +157,11 @@ def next_step(
                 kind=TriggerKind.approval_decision,
                 payload={"approval_id": appr_id, "decision": "approve"},
             ))
-            eng.log(f"t={eng.get_state().clock_min}: [Scenario Step 6] Approval {appr_id} approved by coordinator")
+            # Demonstrate arrival on scene for primary responders
+            for r in state.resources:
+                if r.id in ("A1", "F1") and r.status != ResourceStatus.unavailable:
+                    r.status = ResourceStatus.on_scene
+            eng.log(f"t={eng.get_state().clock_min}: [Scenario Step 6] Approval {appr_id} approved; units A1, F1 arrived on-scene")
         return eng.get_state()
 
     elif _current_step == 7:
@@ -172,8 +176,17 @@ def next_step(
         return eng.get_state()
 
     else:
-        # Further steps advance time by 5 minutes
+        # Further steps advance time by 5 minutes and cycle completed units back to available
         orch.handle(TriggerContext(kind=TriggerKind.time_advance, payload={"minutes": 5}))
+        state = eng.get_state()
+        for r in state.resources:
+            if r.status == ResourceStatus.on_scene:
+                r.status = ResourceStatus.completed
+                r.assigned_incident_id = None
+                eng.log(f"t={eng.get_state().clock_min}: Unit {r.id} completed mission")
+            elif r.status == ResourceStatus.completed:
+                r.status = ResourceStatus.available
+                eng.log(f"t={eng.get_state().clock_min}: Unit {r.id} returned to service and is now available")
         eng.log(f"t={eng.get_state().clock_min}: Scenario completed. Time advanced by 5 min.")
         return eng.get_state()
 

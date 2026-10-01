@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { postJson } from '../api';
 
 const STATUS_CONFIG = {
   available: {
@@ -6,18 +7,28 @@ const STATUS_CONFIG = {
     badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     dot: 'bg-emerald-500',
   },
+  assigned: {
+    label: 'Assigned',
+    badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    dot: 'bg-amber-400',
+  },
   en_route: {
     label: 'En Route',
-    badge: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
-    dot: 'bg-blue-500',
+    badge: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
+    dot: 'bg-sky-500',
   },
   on_scene: {
     label: 'On Scene',
     badge: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
     dot: 'bg-purple-500',
   },
+  completed: {
+    label: 'Completed',
+    badge: 'bg-teal-500/20 text-teal-300 border-teal-500/40',
+    dot: 'bg-teal-400',
+  },
   unavailable: {
-    label: 'Unavailable',
+    label: 'Offline',
     badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
     dot: 'bg-rose-500',
   },
@@ -31,16 +42,18 @@ const TYPE_CONFIG = {
 
 /**
  * ResourceTable displays live emergency fleet status, current assignments,
- * ETAs, locations, and lock/approval constraints.
+ * ETAs, locations, lock/approval constraints, and lifecycle action controls.
  */
 export default function ResourceTable({
   resources = null,
   assignments = null,
   constraints = null,
   state = null,
+  onAction = null,
 }) {
   const [filterType, setFilterType] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
+  const [actionLoading, setActionLoading] = useState(null);
 
   // Derive data from state prop or individual props
   const resourceList = resources || state?.resources || [];
@@ -63,8 +76,26 @@ export default function ResourceTable({
   });
 
   const availableCount = resourceList.filter((r) => r.status === 'available').length;
+  const assignedCount = resourceList.filter((r) => r.status === 'assigned').length;
   const enRouteCount = resourceList.filter((r) => r.status === 'en_route').length;
+  const onSceneCount = resourceList.filter((r) => r.status === 'on_scene').length;
+  const completedCount = resourceList.filter((r) => r.status === 'completed').length;
   const unavailableCount = resourceList.filter((r) => r.status === 'unavailable').length;
+  const totalCount = resourceList.length;
+
+  const handleUnitAction = async (resourceId, action) => {
+    setActionLoading(resourceId);
+    try {
+      await postJson(`/resources/${resourceId}/${action}`);
+      if (onAction) {
+        onAction();
+      }
+    } catch (err) {
+      console.error(`Resource action ${action} failed:`, err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden text-slate-100 flex flex-col h-full">
@@ -72,10 +103,15 @@ export default function ResourceTable({
       <div className="px-4 py-2.5 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-2.5">
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
-            <span>🚒</span> Fleet & Resources
+            <span>🚒</span> Fleet &amp; Resources
           </h2>
           <p className="text-[11px] text-slate-400 mt-0.5 font-mono">
-            {resourceList.length} units total | {availableCount} ready | {enRouteCount} dispatched | {unavailableCount} offline
+            {totalCount} units total | {availableCount} ready
+            {assignedCount > 0 ? ` | ${assignedCount} assigned` : ''}
+            {enRouteCount > 0 ? ` | ${enRouteCount} dispatched` : ''}
+            {onSceneCount > 0 ? ` | ${onSceneCount} on scene` : ''}
+            {completedCount > 0 ? ` | ${completedCount} completed` : ''}
+            {unavailableCount > 0 ? ` | ${unavailableCount} offline` : ' | 0 offline'}
           </p>
         </div>
 
@@ -99,15 +135,17 @@ export default function ResourceTable({
           >
             <option value="ALL">All Statuses</option>
             <option value="available">Available</option>
+            <option value="assigned">Assigned</option>
             <option value="en_route">En Route</option>
             <option value="on_scene">On Scene</option>
-            <option value="unavailable">Unavailable</option>
+            <option value="completed">Completed</option>
+            <option value="unavailable">Offline</option>
           </select>
         </div>
       </div>
 
       {/* Table Content */}
-      <div className="flex-1 overflow-x-auto overflow-y-auto max-h-[240px]">
+      <div className="flex-1 overflow-x-auto overflow-y-auto max-h-[260px]">
         {filteredResources.length === 0 ? (
           <div className="p-6 text-center text-slate-400 text-xs">
             No resources match the selected criteria.
@@ -123,6 +161,7 @@ export default function ResourceTable({
                 <th className="py-1.5 px-2.5">ETA</th>
                 <th className="py-1.5 px-2.5">Location / Base</th>
                 <th className="py-1.5 px-2.5">Lock State</th>
+                <th className="py-1.5 px-2.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
@@ -138,6 +177,7 @@ export default function ResourceTable({
 
                 const isLocked = asg?.locked || constraint?.kind === 'locked';
                 const isApproved = asg?.approved || constraint?.kind === 'approved';
+                const isBusy = actionLoading === res.id;
 
                 return (
                   <tr key={res.id} className="hover:bg-slate-800/40 transition-colors">
@@ -202,6 +242,71 @@ export default function ResourceTable({
                       ) : (
                         <span className="text-slate-600 text-[11px]">Free</span>
                       )}
+                    </td>
+
+                    {/* Unit Action Transitions */}
+                    <td className="py-1.5 px-2.5 font-sans text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {res.status === 'assigned' && (
+                          <button
+                            disabled={isBusy}
+                            onClick={() => handleUnitAction(res.id, 'dispatch')}
+                            className="bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors disabled:opacity-50"
+                            title="Dispatch unit en route"
+                          >
+                            Dispatch
+                          </button>
+                        )}
+                        {res.status === 'en_route' && (
+                          <button
+                            disabled={isBusy}
+                            onClick={() => handleUnitAction(res.id, 'arrive')}
+                            className="bg-purple-600/30 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/40 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors disabled:opacity-50"
+                            title="Mark unit on scene"
+                          >
+                            Arrive
+                          </button>
+                        )}
+                        {res.status === 'on_scene' && (
+                          <button
+                            disabled={isBusy}
+                            onClick={() => handleUnitAction(res.id, 'complete')}
+                            className="bg-teal-600/30 hover:bg-teal-600 text-teal-300 hover:text-white border border-teal-500/40 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors disabled:opacity-50"
+                            title="Complete incident mission"
+                          >
+                            Complete
+                          </button>
+                        )}
+                        {res.status === 'completed' && (
+                          <button
+                            disabled={isBusy}
+                            onClick={() => handleUnitAction(res.id, 'restore')}
+                            className="bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors disabled:opacity-50"
+                            title="Return unit to available pool"
+                          >
+                            Ready
+                          </button>
+                        )}
+                        {res.status !== 'unavailable' ? (
+                          <button
+                            disabled={isBusy}
+                            onClick={() => handleUnitAction(res.id, 'fail')}
+                            className="bg-rose-950/40 hover:bg-rose-900 text-rose-400 hover:text-rose-200 border border-rose-800/40 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors disabled:opacity-50"
+                            title="Inject mechanical failure"
+                          >
+                            Fail
+                          </button>
+                        ) : (
+                          <button
+                            disabled={isBusy}
+                            onClick={() => handleUnitAction(res.id, 'restore')}
+                            className="bg-emerald-950/40 hover:bg-emerald-900 text-emerald-400 hover:text-emerald-200 border border-emerald-800/40 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors disabled:opacity-50"
+                            title="Restore unit back to service"
+                          >
+                            Restore
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

@@ -239,6 +239,60 @@ def restore_resource(resource_id: str) -> Resource:
     return res
 
 
+class ResourceAssignRequest(BaseModel):
+    incident_id: Optional[str] = None
+
+
+@api_router.post("/resources/{resource_id}/assign", response_model=Resource)
+def assign_resource(resource_id: str, req: Optional[ResourceAssignRequest] = None) -> Resource:
+    engine = get_engine()
+    inc_id = req.incident_id if req else None
+    try:
+        engine.update_resource_status(resource_id, ResourceStatus.assigned, assigned_incident_id=inc_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Resource with id {resource_id} not found")
+    state = engine.get_state()
+    return next(r for r in state.resources if r.id == resource_id)
+
+
+@api_router.post("/resources/{resource_id}/dispatch", response_model=Resource)
+def dispatch_resource(resource_id: str) -> Resource:
+    engine = get_engine()
+    state = engine.get_state()
+    res = next((r for r in state.resources if r.id == resource_id), None)
+    if not res:
+        raise HTTPException(status_code=404, detail=f"Resource with id {resource_id} not found")
+    engine.update_resource_status(resource_id, ResourceStatus.en_route, assigned_incident_id=res.assigned_incident_id)
+    return next(r for r in engine.get_state().resources if r.id == resource_id)
+
+
+@api_router.post("/resources/{resource_id}/arrive", response_model=Resource)
+def arrive_resource(resource_id: str) -> Resource:
+    engine = get_engine()
+    state = engine.get_state()
+    res = next((r for r in state.resources if r.id == resource_id), None)
+    if not res:
+        raise HTTPException(status_code=404, detail=f"Resource with id {resource_id} not found")
+    engine.update_resource_status(resource_id, ResourceStatus.on_scene, assigned_incident_id=res.assigned_incident_id)
+    return next(r for r in engine.get_state().resources if r.id == resource_id)
+
+
+@api_router.post("/resources/{resource_id}/complete", response_model=Resource)
+def complete_resource(resource_id: str) -> Resource:
+    engine = get_engine()
+    state = engine.get_state()
+    res = next((r for r in state.resources if r.id == resource_id), None)
+    if not res:
+        raise HTTPException(status_code=404, detail=f"Resource with id {resource_id} not found")
+    engine.update_resource_status(resource_id, ResourceStatus.available, assigned_incident_id=None)
+    if state.current_plan:
+        state.current_plan.assignments = [
+            a for a in state.current_plan.assignments if a.resource_id != resource_id
+        ]
+    engine.log(f"t={state.clock_min}: Resource {resource_id} completed assignment and returned to available")
+    return next(r for r in engine.get_state().resources if r.id == resource_id)
+
+
 @api_router.post("/time/advance")
 def time_advance(req: TimeAdvanceRequest) -> dict:
     orchestrator = get_orchestrator()
