@@ -45,19 +45,19 @@ export default function PlanPanel({
       {/* Header */}
       <div className="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
         <div>
-          <h2 className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
+          <h2 className="text-base font-semibold tracking-tight text-white flex items-center gap-2">
             <span>📋</span> {title}
           </h2>
-          <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+          <p className="text-sm text-slate-400 font-mono mt-0.5">
             ID: <span className="text-slate-300">{id || "unassigned"}</span> | Version: <span className="text-indigo-400 font-bold">v{version}</span>
           </p>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
             {assignments.length} assigned
           </span>
           {unmet.length > 0 && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
               {unmet.length} unmet
             </span>
           )}
@@ -67,32 +67,32 @@ export default function PlanPanel({
       {/* Metrics Row */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 px-3 py-2 bg-slate-900/50 border-b border-slate-800/80 text-center">
         <div className="bg-slate-800/40 rounded-lg p-1.5 border border-slate-800">
-          <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Avg ETA</div>
-          <div className="text-base font-bold text-sky-400 mt-0.5">
+          <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Avg ETA</div>
+          <div className="text-lg font-bold text-sky-400 mt-0.5">
             {metrics.avg_eta_min != null ? `${Number(metrics.avg_eta_min).toFixed(1)}m` : "--"}
           </div>
         </div>
         <div className="bg-slate-800/40 rounded-lg p-1.5 border border-slate-800">
-          <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Max ETA</div>
-          <div className="text-base font-bold text-amber-400 mt-0.5">
+          <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Max ETA</div>
+          <div className="text-lg font-bold text-amber-400 mt-0.5">
             {metrics.max_eta_min != null ? `${Number(metrics.max_eta_min).toFixed(1)}m` : "--"}
           </div>
         </div>
         <div className="bg-slate-800/40 rounded-lg p-1.5 border border-slate-800">
-          <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Coverage</div>
-          <div className="text-base font-bold text-emerald-400 mt-0.5">
+          <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Coverage</div>
+          <div className="text-lg font-bold text-emerald-400 mt-0.5">
             {metrics.coverage_pct != null ? `${Number(metrics.coverage_pct).toFixed(0)}%` : "--"}
           </div>
         </div>
         <div className="bg-slate-800/40 rounded-lg p-1.5 border border-slate-800">
-          <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Utilization</div>
-          <div className="text-base font-bold text-purple-400 mt-0.5">
+          <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Utilization</div>
+          <div className="text-lg font-bold text-purple-400 mt-0.5">
             {metrics.utilization_pct != null ? `${Number(metrics.utilization_pct).toFixed(0)}%` : "--"}
           </div>
         </div>
         <div className="col-span-2 sm:col-span-1 bg-slate-800/40 rounded-lg p-1.5 border border-slate-800">
-          <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Unresolved</div>
-          <div className="text-base font-bold text-rose-400 mt-0.5">
+          <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Unresolved</div>
+          <div className="text-lg font-bold text-rose-400 mt-0.5">
             {metrics.unresolved_count != null ? metrics.unresolved_count : 0}
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function PlanPanel({
         {/* Unmet Slots Alert Section */}
         {unmet.length > 0 && (
           <div className="rounded-lg bg-rose-950/20 border border-rose-900/50 p-2.5">
-            <h3 className="text-xs font-semibold text-rose-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+            <h3 className="text-sm font-semibold text-rose-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
               <span>⚠️</span> Unmet Incident Slots ({unmet.length})
             </h3>
             <div className="space-y-2">
@@ -111,7 +111,7 @@ export default function PlanPanel({
                 return (
                   <div
                     key={`unmet-${item.incident_id}-${idx}`}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between text-xs bg-rose-950/40 border border-rose-900/30 rounded p-2"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between text-sm bg-rose-950/40 border border-rose-900/30 rounded p-2"
                   >
                     <div>
                       <span className="font-mono font-semibold text-rose-300 mr-2">
@@ -126,7 +126,7 @@ export default function PlanPanel({
                       {Object.entries(item.missing || {}).map(([resType, count]) => (
                         <span
                           key={resType}
-                          className="px-1.5 py-0.5 bg-rose-900/40 rounded text-[11px] font-mono"
+                          className="px-1.5 py-0.5 bg-rose-900/40 rounded text-xs font-mono"
                         >
                           {count}x {resType}
                         </span>
@@ -141,9 +141,9 @@ export default function PlanPanel({
 
         {/* Assignments List */}
         <div>
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
             <span>Current Assignments</span>
-            <span className="text-[11px] font-normal text-slate-500 font-mono">
+            <span className="text-xs font-normal text-slate-500 font-mono">
               Count: {assignments.length}
             </span>
           </h3>
@@ -157,26 +157,31 @@ export default function PlanPanel({
               {assignments.map((asg) => {
                 const res = resourceMap.get(asg.resource_id);
                 const inc = incidentMap.get(asg.incident_id);
+                const isFailed = res?.status === 'unavailable';
 
                 return (
                   <div
                     key={asg.id || `${asg.resource_id}-${asg.incident_id}`}
-                    className="p-3 bg-slate-800/40 hover:bg-slate-800/70 border border-slate-800 hover:border-slate-700/80 rounded-lg transition-colors flex flex-col gap-1.5"
+                    className={`p-3 border rounded-lg transition-colors flex flex-col gap-1.5 ${
+                      isFailed 
+                        ? 'bg-rose-950/20 border-rose-900/50 hover:bg-rose-900/30' 
+                        : 'bg-slate-800/40 hover:bg-slate-800/70 border-slate-800 hover:border-slate-700/80'
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono font-bold text-sky-400 text-sm">
+                        <span className={`font-mono font-bold text-sm ${isFailed ? 'text-rose-400 line-through' : 'text-sky-400'}`}>
                           {asg.resource_id}
                         </span>
                         {res?.name && (
-                          <span className="text-xs text-slate-300">({res.name})</span>
+                          <span className={`text-sm ${isFailed ? 'text-rose-300' : 'text-slate-300'}`}>({res.name})</span>
                         )}
-                        <span className="text-slate-500 text-xs">➔</span>
-                        <span className="font-mono font-bold text-amber-400 text-sm">
+                        <span className="text-slate-500 text-sm">➔</span>
+                        <span className="font-mono font-bold text-amber-400 text-base">
                           {asg.incident_id}
                         </span>
                         {inc?.type && (
-                          <span className="text-[10px] font-medium uppercase px-1.5 py-0.5 rounded bg-slate-700/60 text-slate-300">
+                          <span className="text-xs font-medium uppercase px-1.5 py-0.5 rounded bg-slate-700/60 text-slate-300">
                             {inc.type}
                           </span>
                         )}
@@ -184,25 +189,34 @@ export default function PlanPanel({
 
                       {/* Status Badges */}
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {asg.locked && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                        {isFailed && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                            ⚠️ INVALIDATED
+                          </span>
+                        )}
+                        {!isFailed && asg.locked && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
                             🔒 LOCKED
                           </span>
                         )}
-                        {asg.approved && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        {!isFailed && asg.approved && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                             ✓ APPROVED
                           </span>
                         )}
-                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-sky-950/60 text-sky-300 border border-sky-800/60">
+                        <span className={`font-mono text-sm font-semibold px-2 py-0.5 rounded border ${
+                          isFailed 
+                            ? 'bg-rose-950/60 text-rose-300 border-rose-800/60' 
+                            : 'bg-sky-950/60 text-sky-300 border-sky-800/60'
+                        }`}>
                           {asg.eta_min != null ? `${Number(asg.eta_min).toFixed(1)}m` : "--"}
                         </span>
                       </div>
                     </div>
 
                     {/* Routing and Rationale Details */}
-                    <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 gap-y-1">
-                      <div className="text-[11px] text-slate-400 flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-between text-sm text-slate-400 gap-y-1">
+                      <div className="text-xs text-slate-400 flex items-center gap-2">
                         {asg.distance_km != null && (
                           <span>Distance: <strong className="text-slate-300">{Number(asg.distance_km).toFixed(1)} km</strong></span>
                         )}
@@ -211,14 +225,14 @@ export default function PlanPanel({
                         )}
                       </div>
                       {asg.reason && (
-                        <div className="text-[11px] text-slate-400 italic">
+                        <div className="text-xs text-slate-400 italic">
                           &quot;{asg.reason}&quot;
                         </div>
                       )}
 
                       <button
                         onClick={() => setSelectedAssignment(asg)}
-                        className="text-[10px] font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-500/30 px-2 py-0.5 rounded transition-colors flex items-center gap-1 ml-auto"
+                        className="text-xs font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-500/30 px-2 py-0.5 rounded transition-colors flex items-center gap-1 ml-auto"
                       >
                         <span>💡</span> Why this resource?
                       </button>

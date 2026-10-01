@@ -130,7 +130,7 @@ def test_free_text_known_place_not_flagged():
     inc, rules = parse_free_text_rule_based(text, clock_min=5, incident_id="I2")
 
     assert inc.type == IncidentType.fire
-    assert inc.location.label == "Shivajinagar Depot"
+    assert inc.location.label == "Shivajinagar"
     assert "location" not in inc.uncertain_fields
     assert inc.needs_confirmation is False
     assert inc.people_affected == 4
@@ -230,7 +230,7 @@ def test_p2_a1_acceptance_llm_valid_mock_used(monkeypatch):
         "type": "fire",
         "severity": 4,
         "people_affected": 6,
-        "location_label": "Shivajinagar Depot",
+        "location_label": "Shivajinagar",
         "required": {"fire_engine": 1, "ambulance": 1},
         "uncertain_fields": [],
         "confidence": 0.95,
@@ -253,7 +253,7 @@ def test_p2_a1_acceptance_llm_valid_mock_used(monkeypatch):
     assert inc.type == IncidentType.fire
     assert inc.severity == 4
     assert inc.people_affected == 6
-    assert inc.location.label == "Shivajinagar Depot"
+    assert inc.location.label == "Shivajinagar"
     assert inc.needs_confirmation is False
     assert inc.required == {ResourceType.fire_engine: 1, ResourceType.ambulance: 1}
 
@@ -439,7 +439,7 @@ def test_p2_t1_scenario_assessment_timeout(monkeypatch):
     )
     assessed = res.payload["incidents"][0]
     assert assessed.type == IncidentType.fire
-    assert assessed.location.label == "Shivajinagar Depot"
+    assert assessed.location.label == "Shivajinagar"
     assert res.traces[0].used_llm is False
     assert res.traces[0].fallback_used is True
 

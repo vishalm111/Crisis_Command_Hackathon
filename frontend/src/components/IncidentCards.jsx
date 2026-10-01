@@ -64,7 +64,7 @@ export default function IncidentCards({
   const [escalatingId, setEscalatingId] = useState(null);
   const [escalateError, setEscalateError] = useState(null);
 
-  const baseUrl = apiUrl || (typeof window !== 'undefined' && window.__VITE_API_URL__) || 'http://localhost:8000';
+  const baseUrl = apiUrl || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:8000';
 
   // Use provided incidents prop or fall back to mock data
   const incidentList = incidents !== null ? incidents : mockIncidents;
@@ -107,10 +107,10 @@ export default function IncidentCards({
       {/* Header & Filter Controls */}
       <div className="px-4 py-2.5 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-2.5">
         <div>
-          <h2 className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
+          <h2 className="text-base font-semibold tracking-tight text-white flex items-center gap-2">
             <span>🚨</span> Active Incidents
           </h2>
-          <p className="text-[11px] text-slate-400 mt-0.5">
+          <p className="text-sm text-slate-400 mt-0.5">
             Real-time assessment, priority scoring, and confirmation status
           </p>
         </div>
@@ -121,7 +121,7 @@ export default function IncidentCards({
             <button
               key={tab}
               onClick={() => setFilterTier(tab)}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
                 filterTier === tab
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -153,8 +153,8 @@ export default function IncidentCards({
             <div className="w-10 h-10 rounded-full bg-slate-800/60 flex items-center justify-center text-lg mb-1.5 text-slate-400">
               🚒
             </div>
-            <h3 className="text-xs font-semibold text-slate-300">No Incidents Found</h3>
-            <p className="text-[11px] text-slate-500 mt-0.5 max-w-sm">
+            <h3 className="text-sm font-semibold text-slate-300">No Incidents Found</h3>
+            <p className="text-xs text-slate-500 mt-0.5 max-w-sm">
               {filterTier === 'ALL'
                 ? 'No active emergencies recorded. Use the Add Incident form to report a new event.'
                 : `No incidents currently match the "${filterTier}" filter criteria.`}
@@ -183,7 +183,7 @@ export default function IncidentCards({
               >
                 {/* Needs Confirmation Safety Banner & Uncertainty Safeguard */}
                 {incident.needs_confirmation && (
-                  <div className="mb-3 px-3 py-2 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center gap-2 text-amber-300 text-xs font-medium">
+                  <div className="mb-3 px-3 py-2 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center gap-2 text-amber-300 text-sm font-medium">
                     <span className="text-base">⚠️</span>
                     <span className="flex-1">
                       <strong>Unconfirmed Report Safeguard:</strong> Location/details unverified. Automated dispatch inhibited until confirmed by human coordinator.
@@ -194,24 +194,24 @@ export default function IncidentCards({
                 {/* Card Top Row: ID, Type, Severity, Tier */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800/80">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-white bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                    <span className="font-mono text-sm font-bold text-white bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
                       {incident.id}
                     </span>
 
                     {/* Type Badge */}
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${typeInfo.color}`}>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm font-medium border ${typeInfo.color}`}>
                       <span>{typeInfo.icon}</span>
                       <span>{typeInfo.label}</span>
                     </span>
 
                     {/* Severity Badge */}
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-200 border border-slate-700">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-200 border border-slate-700">
                       Sev {incident.severity}/5
                     </span>
 
                     {/* Feature 7: AI Confidence % Badge */}
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono font-bold border ${
                         incident.needs_confirmation || incident.confidence < 0.8
                           ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                           : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
@@ -223,13 +223,13 @@ export default function IncidentCards({
 
                   <div className="flex items-center gap-2">
                     {/* Tier Badge with BOTH Text Label and Color (Accessibility Requirement) */}
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border tracking-wide ${tierInfo.badge}`}>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-sm font-bold border tracking-wide ${tierInfo.badge}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${tierInfo.indicator}`} />
                       <span>TIER: {tierInfo.label}</span>
                     </span>
 
                     {/* Status Badge */}
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border capitalize ${statusClass}`}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium border capitalize ${statusClass}`}>
                       {incident.status?.replace('_', ' ')}
                     </span>
                   </div>
@@ -237,7 +237,7 @@ export default function IncidentCards({
 
                 {/* Card Body: Description & Details */}
                 <div className="mt-3">
-                  <p className="text-sm font-medium text-slate-200">
+                  <p className="text-base font-medium text-slate-200">
                     {incident.description || 'Emergency incident reported without specific details.'}
                   </p>
 
@@ -245,34 +245,34 @@ export default function IncidentCards({
                   <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                     {/* Priority Score */}
                     <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
-                      <span className="text-slate-400 block text-[10px] uppercase font-semibold">Priority Score</span>
-                      <span className="text-base font-bold text-indigo-400 font-mono">
+                      <span className="text-slate-400 block text-xs uppercase font-semibold">Priority Score</span>
+                      <span className="text-lg font-bold text-indigo-400 font-mono">
                         {typeof incident.priority === 'number' ? incident.priority.toFixed(1) : incident.priority || '0.0'}
                       </span>
                     </div>
 
                     {/* People Affected */}
                     <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
-                      <span className="text-slate-400 block text-[10px] uppercase font-semibold">Casualties / Affected</span>
-                      <span className="text-sm font-semibold text-slate-200">
+                      <span className="text-slate-400 block text-xs uppercase font-semibold">Casualties / Affected</span>
+                      <span className="text-base font-semibold text-slate-200">
                         👥 {incident.people_affected || 0} people
                       </span>
                     </div>
 
                     {/* Location & Uncertainty Radius */}
                     <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
-                      <span className="text-slate-400 block text-[10px] uppercase font-semibold">Location & Uncertainty</span>
+                      <span className="text-slate-400 block text-xs uppercase font-semibold">Location & Uncertainty</span>
                       <span className="text-slate-300 truncate block font-medium" title={incident.location?.label || 'Coordinates'}>
                         📍 {incident.location?.label || `${incident.location?.lat?.toFixed(3)}, ${incident.location?.lng?.toFixed(3)}`}
                       </span>
-                      <span className="text-[10px] font-mono text-slate-400">
+                      <span className="text-xs font-mono text-slate-400">
                         {incident.needs_confirmation ? 'Uncertain (±250m Sector)' : 'Verified (±15m GPS)'}
                       </span>
                     </div>
 
                     {/* Reported At */}
                     <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
-                      <span className="text-slate-400 block text-[10px] uppercase font-semibold">Report Time</span>
+                      <span className="text-slate-400 block text-xs uppercase font-semibold">Report Time</span>
                       <span className="text-slate-300 font-mono">
                         ⏱️ t={incident.reported_at_min || 0} min
                       </span>
@@ -281,12 +281,12 @@ export default function IncidentCards({
 
                   {/* Required Resources */}
                   {incident.required && Object.keys(incident.required).length > 0 && (
-                    <div className="mt-2.5 flex items-center gap-1.5 text-xs text-slate-400">
+                    <div className="mt-2.5 flex items-center gap-1.5 text-sm text-slate-400">
                       <span className="font-semibold text-slate-300">Required:</span>
                       {Object.entries(incident.required).map(([resType, count]) => (
                         <span
                           key={resType}
-                          className="bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded border border-slate-700/60 font-mono text-[11px]"
+                          className="bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded border border-slate-700/60 font-mono text-xs"
                         >
                           {count}x {resType.replace('_', ' ')}
                         </span>
@@ -297,11 +297,11 @@ export default function IncidentCards({
                   {/* Uncertain Fields Chips */}
                   {incident.uncertain_fields && incident.uncertain_fields.length > 0 && (
                     <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs font-semibold text-amber-400/90">Uncertain:</span>
+                      <span className="text-sm font-semibold text-amber-400/90">Uncertain:</span>
                       {incident.uncertain_fields.map((field) => (
                         <span
                           key={field}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/30"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-300 border border-amber-500/30"
                         >
                           <span>❓</span>
                           <span>{field}</span>

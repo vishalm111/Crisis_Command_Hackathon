@@ -20,7 +20,7 @@ export default function ApprovalPanel({
   const [actionError, setActionError] = useState(null);
   const [actionSuccess, setActionSuccess] = useState(null);
 
-  const baseUrl = apiUrl || (typeof window !== "undefined" && window.__VITE_API_URL__) || "http://localhost:8000";
+  const baseUrl = apiUrl || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || "http://localhost:8000";
 
   // Graceful empty state when approval is null or not pending
   if (!approval || approval.status !== "pending") {
@@ -238,7 +238,7 @@ export default function ApprovalPanel({
           ) : (
             <>
               <span>✓</span>
-              <span>Approve &amp; Dispatch</span>
+              <span>Approve {diff?.to_version ? `v${diff.to_version}` : 'Plan'} &rarr; Replace {diff?.from_version ? `v${diff.from_version}` : 'Current'}</span>
             </>
           )}
         </button>

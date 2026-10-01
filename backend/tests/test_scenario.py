@@ -97,12 +97,14 @@ def test_scenario_full_lifecycle():
     # Proposed plan must be promoted and approval cleared/approved
     assert state["proposed_plan"] is None
 
-    # Step 7: What-If simulation
+    # Step 7: Resource Restoration
     res = client.post("/api/scenario/next")
     assert res.status_code == 200
     state_after = res.json()
-    # Live state clock, incidents, and resources preserved
-    assert state_after["clock_min"] == state["clock_min"]
+    # Live state clock advanced by 3, A3 restored
+    assert state_after["clock_min"] == state["clock_min"] + 3
+    a3_restored = next(r for r in state_after["resources"] if r["id"] == "A3")
+    assert a3_restored["status"] == "available"
 
 
 def test_scenario_run_all_deterministic():

@@ -20,9 +20,9 @@ def build_seed_state() -> CrisisState:
         Resource(
             id="A3",
             type=ResourceType.ambulance,
-            name="Ambulance A3 (Malleswaram)",
-            base=LatLng(lat=13.0068, lng=77.5816, label="Malleswaram Base"),
-            location=LatLng(lat=13.0068, lng=77.5816, label="Malleswaram Base"),
+            name="Ambulance A3 (North Base)",
+            base=LatLng(lat=12.9800, lng=77.5900, label="Station North Base"),
+            location=LatLng(lat=12.9800, lng=77.5900, label="Station North Base"),
         ),
         Resource(
             id="F1",

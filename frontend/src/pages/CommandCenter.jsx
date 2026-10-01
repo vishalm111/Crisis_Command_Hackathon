@@ -53,22 +53,26 @@ export default function CommandCenter() {
     <div className="min-h-screen bg-slate-950 flex flex-col font-sans text-slate-100 selection:bg-indigo-500/30">
       <SafetyBanner />
       
-      {/* Portal Quick Navigation Bar */}
+      {/* Top Navigation Bar */}
       <div className="bg-slate-900/90 border-b border-slate-800/80 px-4 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors font-medium group"
-            title="Return to Public Website"
-          >
-            <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
-            <span>Crisis Command Portal</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-gradient-to-br from-indigo-600 to-cyan-500 flex items-center justify-center">
+              <span className="text-[10px] font-black text-white">CC</span>
+            </div>
+            <span className="text-slate-200 font-mono text-[11px] tracking-wider uppercase font-semibold">
+              Crisis Command
+            </span>
+            <span className="text-slate-600">·</span>
+            <span className="text-slate-400 font-mono text-[10px]">
+              Team Neural Ninjas
+            </span>
+          </div>
           <span className="text-slate-700">|</span>
           <div className="flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-slate-300 font-mono text-[11px] tracking-wider uppercase font-semibold">
-              Live Operations Cockpit
+            <span className="text-emerald-400 font-mono text-[11px] tracking-wider uppercase font-semibold">
+              Live Dashboard
             </span>
           </div>
         </div>
@@ -78,13 +82,13 @@ export default function CommandCenter() {
             onClick={() => navigate('/demo')}
             className="text-[11px] text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-950/40 border border-indigo-500/20"
           >
-            <span>▶</span> Interactive Walkthrough
+            <span>▶</span> Scenario Walkthrough
           </button>
           <button
             onClick={() => navigate('/docs')}
             className="text-[11px] text-slate-400 hover:text-slate-200 hover:underline px-2 py-0.5"
           >
-            API &amp; Architecture
+            Docs
           </button>
         </div>
       </div>
@@ -160,23 +164,29 @@ export default function CommandCenter() {
         /* STANDARD DASHBOARD LAYOUT */
         <main className="flex-1 p-3 grid grid-cols-12 gap-2.5">
           {/* Top Row: Scoreboard + Simulation & Story Controls */}
-          <div className="col-span-12 flex flex-col gap-2.5">
+          <div className="col-span-12 flex flex-col gap-2.5 animate-fade-in-up">
             <CrisisScoreboard state={state} />
             <SimulationControls state={state} onAction={refresh} />
           </div>
 
           {/* Left Column (col-span-12 lg:col-span-3): Incidents, Alerts, Chaos Engineering */}
-          <div className="col-span-12 lg:col-span-3 flex flex-col gap-2.5">
-            <IncidentCards
-              incidents={state?.incidents}
-              onEscalate={handleEscalate}
-            />
-            <AlertsPanel alerts={state?.alerts} />
-            <ChaosMode onAction={refresh} />
+          <div className="col-span-12 lg:col-span-3 flex flex-col gap-2.5 animate-fade-in-up animate-delay-2">
+            <div className="panel-glow rounded-xl">
+              <IncidentCards
+                incidents={state?.incidents}
+                onEscalate={handleEscalate}
+              />
+            </div>
+            <div className="panel-glow rounded-xl">
+              <AlertsPanel alerts={state?.alerts} />
+            </div>
+            <div className="panel-glow rounded-xl">
+              <ChaosMode onAction={refresh} />
+            </div>
           </div>
 
           {/* Center Column (col-span-12 lg:col-span-6): Map, Topology, Replay, Active Plan & Diff */}
-          <div className="col-span-12 lg:col-span-6 flex flex-col gap-2.5">
+          <div className="col-span-12 lg:col-span-6 flex flex-col gap-2.5 animate-fade-in-up animate-delay-3">
             {/* Center Tab Selector */}
             <div className="flex flex-wrap items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-xl p-1 text-xs self-start">
               <button
@@ -218,26 +228,32 @@ export default function CommandCenter() {
             {centerTab === 'topology' && <DependencyGraph state={state} />}
             {centerTab === 'replay' && <DecisionReplay state={state} />}
 
-            <PlanPanel
-              plan={state?.current_plan}
-              incidents={state?.incidents}
-              resources={state?.resources}
-              state={state}
-            />
+            <div className="panel-glow rounded-xl">
+              <PlanPanel
+                plan={state?.current_plan}
+                incidents={state?.incidents}
+                resources={state?.resources}
+                state={state}
+              />
+            </div>
 
-            <PlanDiff
-              diff={state?.latest_diff}
-              state={state}
-            />
+            <div className="panel-glow rounded-xl">
+              <PlanDiff
+                diff={state?.latest_diff}
+                state={state}
+              />
+            </div>
           </div>
 
           {/* Right Column (col-span-12 lg:col-span-3): Approvals, Crisis Brain, Lab, Chat, Telemetry */}
-          <div className="col-span-12 lg:col-span-3 flex flex-col gap-2.5">
-            <ApprovalPanel
-              approval={state?.approval}
-              onApprove={handleApprove}
-              onReject={handleReject}
-            />
+          <div className="col-span-12 lg:col-span-3 flex flex-col gap-2.5 animate-fade-in-up animate-delay-4">
+            <div className="panel-glow rounded-xl">
+              <ApprovalPanel
+                approval={state?.approval}
+                onApprove={handleApprove}
+                onReject={handleReject}
+              />
+            </div>
 
             {/* Right Sub-View Tabs */}
             <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-xl p-1 text-xs">
@@ -275,29 +291,31 @@ export default function CommandCenter() {
 
             {sideTab === 'ops' && (
               <>
-                <ResourceTable state={state} onAction={refresh} />
-                <AgentChat messages={state?.messages} />
-                <SystemHealth state={state} error={error} />
+                <div className="panel-glow rounded-xl"><ResourceTable state={state} onAction={refresh} /></div>
+                <div className="panel-glow rounded-xl"><AgentChat messages={state?.messages} /></div>
+                <div className="panel-glow rounded-xl"><SystemHealth state={state} error={error} /></div>
               </>
             )}
 
             {sideTab === 'ai' && (
               <>
-                <CrisisBrain state={state} />
-                <ExplanationLog
-                  explanations={state?.explanations}
-                  traces={state?.traces}
-                  llmStatus={state?.llm_status}
-                />
-                <AgentChat messages={state?.messages} />
+                <div className="panel-glow rounded-xl"><CrisisBrain state={state} /></div>
+                <div className="panel-glow rounded-xl">
+                  <ExplanationLog
+                    explanations={state?.explanations}
+                    traces={state?.traces}
+                    llmStatus={state?.llm_status}
+                  />
+                </div>
+                <div className="panel-glow rounded-xl"><AgentChat messages={state?.messages} /></div>
               </>
             )}
 
             {sideTab === 'lab' && (
               <>
-                <ImpactPredictor state={state} />
-                <CounterfactualLab state={state} />
-                <WhatIfPanel state={state} />
+                <div className="panel-glow rounded-xl"><ImpactPredictor state={state} /></div>
+                <div className="panel-glow rounded-xl"><CounterfactualLab state={state} /></div>
+                <div className="panel-glow rounded-xl"><WhatIfPanel state={state} /></div>
               </>
             )}
           </div>

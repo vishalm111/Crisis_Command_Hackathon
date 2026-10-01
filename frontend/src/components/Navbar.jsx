@@ -6,11 +6,9 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { label: 'Overview', href: '/' },
-    { label: 'Interactive Demo', href: '/demo' },
-    { label: 'Command Center', href: '/app' },
-    { label: 'Architecture & Docs', href: '/docs' },
-    { label: 'About & Safety', href: '/about' },
+    { label: 'Command Center', href: '/' },
+    { label: 'Scenario', href: '/demo' },
+    { label: 'Docs', href: '/docs' },
   ];
 
   const handleNav = (href) => {
@@ -20,7 +18,7 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-slate-950/85 backdrop-blur-md border-b border-slate-800/80 transition-all">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
         {/* Brand */}
         <button
           onClick={() => handleNav('/')}
@@ -43,12 +41,9 @@ export default function Navbar() {
               <span className="text-base font-extrabold tracking-wider text-white font-mono uppercase">
                 Crisis Command
               </span>
-              <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-indigo-950/80 border border-indigo-500/30 text-indigo-300 font-mono tracking-widest hidden sm:inline-block">
-                v2.4
-              </span>
             </div>
             <p className="text-[10px] text-slate-400 font-mono tracking-tight hidden md:block">
-              Multi-Agent Emergency Dispatch Orchestrator
+              Team Neural Ninjas
             </p>
           </div>
         </button>
@@ -56,7 +51,7 @@ export default function Navbar() {
         {/* Desktop Nav Items */}
         <nav className="hidden lg:flex items-center gap-1">
           {navLinks.map((link) => {
-            const isActive = path === link.href;
+            const isActive = path === link.href || (link.href === '/' && path === '/app');
             return (
               <button
                 key={link.href}
@@ -73,32 +68,16 @@ export default function Navbar() {
           })}
         </nav>
 
-        {/* Action Button & Telemetry indicator */}
+        {/* Status indicator */}
         <div className="hidden sm:flex items-center gap-3">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-400">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             <span>AGENTS READY</span>
           </div>
-
-          <button
-            onClick={() => handleNav('/app')}
-            className="relative group overflow-hidden px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-semibold tracking-wide shadow-md shadow-indigo-600/30 transition-all hover:shadow-cyan-500/30 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <span className="flex items-center gap-1.5">
-              <span>Launch Command Center</span>
-              <span className="group-hover:translate-x-0.5 transition-transform font-mono">→</span>
-            </span>
-          </button>
         </div>
 
         {/* Mobile Hamburger Toggle */}
         <div className="lg:hidden flex items-center gap-2">
-          <button
-            onClick={() => handleNav('/app')}
-            className="px-2.5 py-1 rounded-md bg-indigo-600 text-white text-xs font-semibold"
-          >
-            Launch
-          </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white"
@@ -113,7 +92,7 @@ export default function Navbar() {
       {mobileMenuOpen && (
         <div className="lg:hidden border-b border-slate-800 bg-slate-950/95 px-4 pt-2 pb-4 space-y-1">
           {navLinks.map((link) => {
-            const isActive = path === link.href;
+            const isActive = path === link.href || (link.href === '/' && path === '/app');
             return (
               <button
                 key={link.href}
@@ -128,14 +107,6 @@ export default function Navbar() {
               </button>
             );
           })}
-          <div className="pt-2">
-            <button
-              onClick={() => handleNav('/app')}
-              className="w-full py-2.5 text-center rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-md"
-            >
-              Launch Command Center →
-            </button>
-          </div>
         </div>
       )}
     </header>

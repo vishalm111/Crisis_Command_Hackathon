@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { RouterProvider, useRouter } from './router/Router';
 
-import LandingPage from './pages/LandingPage';
+import HomePage from './pages/HomePage';
 import CommandCenter from './pages/CommandCenter';
 import InteractiveDemo from './pages/InteractiveDemo';
 import AboutPage from './pages/AboutPage';
@@ -9,19 +9,24 @@ import DocsPage from './pages/DocsPage';
 
 function RouteSwitch() {
   const { path } = useRouter();
+  const [launched, setLaunched] = useState(false);
+
+  // On '/', show ONLY HomePage until user clicks Launch — don't render CommandCenter behind it
+  if (path === '/' && !launched) {
+    return <HomePage onLaunch={() => setLaunched(true)} />;
+  }
 
   switch (path) {
-    case '/app':
-      return <CommandCenter />;
     case '/demo':
       return <InteractiveDemo />;
     case '/about':
       return <AboutPage />;
     case '/docs':
       return <DocsPage />;
+    case '/app':
     case '/':
     default:
-      return <LandingPage />;
+      return <CommandCenter />;
   }
 }
 

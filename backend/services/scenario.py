@@ -63,7 +63,7 @@ def next_step(
             type=IncidentType.medical,
             severity=3,
             description="Motorcycle accident with pedestrian injury near MG Road Metro",
-            location=LatLng(lat=12.9716, lng=77.5946, label="MG Road Metro"),
+            location=LatLng(lat=12.9716, lng=77.5946, label="MG Road"),
             people_affected=2,
             required={ResourceType.ambulance: 1},
             status=IncidentStatus.new,
@@ -82,7 +82,7 @@ def next_step(
             type=IncidentType.fire,
             severity=4,
             description="Commercial warehouse electrical fire with smoke inhalation casualties",
-            location=LatLng(lat=12.9830, lng=77.6040, label="Shivajinagar Depot"),
+            location=LatLng(lat=12.9857, lng=77.6057, label="Shivajinagar"),
             people_affected=6,
             required={ResourceType.fire_engine: 1, ResourceType.ambulance: 1},
             status=IncidentStatus.new,
@@ -96,7 +96,7 @@ def next_step(
     elif _current_step == 3:
         # Step 3: t=10, Free-text vague report near Richmond Circle flyover
         orch.handle(TriggerContext(kind=TriggerKind.time_advance, payload={"minutes": 5}))
-        raw_report = "Elderly man collapsed near the flyover, unconscious and possible heart attack"
+        raw_report = "Elderly man collapsed near Indiranagar, unconscious and possible heart attack"
         orch.handle(TriggerContext(
             kind=TriggerKind.new_incident,
             payload={"free_text": raw_report, "incident_id": "I3"},
@@ -105,14 +105,14 @@ def next_step(
         return eng.get_state()
 
     elif _current_step == 4:
-        # Step 4: t=15, Incident I4 Building collapse at Town Hall
+        # Step 4: t=15, Incident I4 Building collapse at Koramangala
         orch.handle(TriggerContext(kind=TriggerKind.time_advance, payload={"minutes": 5}))
         i4 = Incident(
             id="I4",
             type=IncidentType.rescue,
             severity=5,
-            description="Multi-story commercial building collapse with trapped survivors",
-            location=LatLng(lat=12.9630, lng=77.5830, label="Town Hall"),
+            description="Multi-story commercial building collapse in Koramangala with trapped survivors",
+            location=LatLng(lat=12.9350, lng=77.6200, label="Koramangala"),
             people_affected=20,
             required={
                 ResourceType.rescue_team: 1,
@@ -165,14 +165,14 @@ def next_step(
         return eng.get_state()
 
     elif _current_step == 7:
-        # Step 7: What-If simulation on snapshot (hypothetical failure of F2)
-        # Running What-If MUST NOT mutate live CrisisState
-        whatif_subagent = WhatIfAgent()
-        whatif_subagent.run(
-            eng.get_state(),
-            TriggerContext(kind=TriggerKind.resource_failure, payload={"resource_id": "F2"}),
-        )
-        eng.log(f"t={eng.get_state().clock_min}: [Scenario Step 7] What-If simulation executed on snapshot")
+        # Step 7: Resource Restoration
+        orch.handle(TriggerContext(kind=TriggerKind.time_advance, payload={"minutes": 3}))
+        orch.handle(TriggerContext(kind=TriggerKind.resource_restored, payload={"resource_id": "A3"}))
+        try:
+            eng.update_resource_status("A3", ResourceStatus.available)
+        except KeyError:
+            pass
+        eng.log(f"t={eng.get_state().clock_min}: [Scenario Step 7] Resource A3 restored to active service")
         return eng.get_state()
 
     else:

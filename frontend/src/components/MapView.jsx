@@ -1,14 +1,15 @@
 import React, { Fragment, useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import mockState from '../../../contracts/mock_state.json';
 
 // High-contrast, visible pill badge marker with emoji + text ID
-const createIcon = (emoji, color, label) => {
+const createIcon = (emoji, color, label, isCritical = false) => {
+    const pulseStyle = isCritical ? 'animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; box-shadow: 0 0 15px 5px rgba(239, 68, 68, 0.6); border: 2px solid #ffffff;' : 'box-shadow: 0 2px 5px rgba(0,0,0,0.5); border: 1.5px solid #ffffff;';
     return L.divIcon({
         className: 'custom-map-pill',
-        html: `<div style="background-color: ${color}; color: #ffffff; font-weight: 800; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; line-height: 1; padding: 2.5px 6px; border-radius: 9999px; border: 1.5px solid #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.5); display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; transform: translate(-50%, -50%); text-shadow: 0 1px 2px rgba(0,0,0,0.8); cursor: pointer;"><span style="font-size: 12px; line-height: 1;">${emoji}</span><span>${label || ''}</span></div>`,
+        html: `<div style="background-color: ${color}; color: #ffffff; font-weight: 800; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; line-height: 1; padding: 2.5px 6px; border-radius: 9999px; ${pulseStyle} display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; transform: translate(-50%, -50%); text-shadow: 0 1px 2px rgba(0,0,0,0.8); cursor: pointer;"><span style="font-size: 12px; line-height: 1;">${emoji}</span><span>${label || ''}</span></div>`,
         iconSize: [0, 0],
         iconAnchor: [0, 0]
     });
@@ -110,7 +111,7 @@ export default function MapView({ state }) {
         );
     }
 
-    const center = [12.97, 77.59]; // Central Bengaluru
+    const center = [12.965, 77.605]; // Centered across Bengaluru incident network (MG Road, Shivajinagar, Indiranagar, Koramangala)
 
     return (
         <div
@@ -161,21 +162,29 @@ export default function MapView({ state }) {
                     />
                     
                     {/* Incidents */}
-                    {data.incidents.map(inc => (
-                        <Marker 
-                            key={`inc-${inc.id}`} 
-                            position={[inc.location.lat, inc.location.lng]}
-                            icon={createIcon(typeToEmoji[inc.type] || '❓', getIncidentColor(inc.tier), inc.id)}
-                        >
-                            <Popup>
-                                <div className="text-xs font-sans text-slate-900">
-                                    <strong className="text-sm">{inc.id} ({inc.type})</strong><br/>
-                                    <span className="font-semibold">Tier:</span> {inc.tier}<br/>
-                                    <span className="text-slate-600">{inc.description}</span>
-                                </div>
-                            </Popup>
-                        </Marker>
-                    ))}
+                    {data.incidents.map(inc => {
+                        const locLabel = inc.location?.label ? inc.location.label.replace(/^Unverified:\s*/i, '') : '';
+                        const markerText = locLabel ? `${inc.id} • ${locLabel}` : inc.id;
+                        return (
+                            <Marker 
+                                key={`inc-${inc.id}-${inc.location?.lat}-${inc.location?.lng}`} 
+                                position={[inc.location.lat, inc.location.lng]}
+                                icon={createIcon(typeToEmoji[inc.type] || '❓', getIncidentColor(inc.tier), markerText, inc.tier === 'critical' || inc.severity >= 5)}
+                            >
+                                <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
+                                    <span className="font-bold">{inc.id}: {inc.location?.label || 'Incident'}</span> ({inc.tier})
+                                </Tooltip>
+                                <Popup>
+                                    <div className="text-xs font-sans text-slate-900">
+                                        <strong className="text-sm">{inc.id} ({inc.type})</strong><br/>
+                                        <span className="font-semibold text-indigo-700">📍 {inc.location?.label || 'Bengaluru'}</span><br/>
+                                        <span className="font-semibold">Tier:</span> {inc.tier}<br/>
+                                        <span className="text-slate-600">{inc.description}</span>
+                                    </div>
+                                </Popup>
+                            </Marker>
+                        );
+                    })}
 
                     {/* Facilities */}
                     {data.facilities && data.facilities.map(fac => (
@@ -199,30 +208,40 @@ export default function MapView({ state }) {
                         const position = [res.location.lat, res.location.lng];
                         let assignedIncident = null;
                         
-                        if (res.assigned_incident_id) {
-                            assignedIncident = data.incidents.find(i => i.id === res.assigned_incident_id);
+                        // Use active plan assignments to draw accurate lines
+                        const currentAsg = data.current_plan?.assignments?.find(a => a.resource_id === res.id);
+                        const targetIncidentId = currentAsg ? currentAsg.incident_id : res.assigned_incident_id;
+                        
+                        if (targetIncidentId) {
+                            assignedIncident = data.incidents.find(i => i.id === targetIncidentId);
                         }
 
                         return (
                             <Fragment key={`res-group-${res.id}`}>
                                 <Marker 
                                     position={position}
-                                    icon={createIcon(resourceTypeToEmoji[res.type] || '🚚', getResourceColor(res.status), res.id)}
+                                    icon={createIcon(resourceTypeToEmoji[res.type] || '🚚', getResourceColor(res.status), res.id, res.status === 'unavailable')}
                                     zIndexOffset={100}
                                 >
                                     <Popup>
                                         <div className="text-xs font-sans text-slate-900">
                                             <strong className="text-sm">{res.id}: {res.name}</strong><br/>
                                             <span>Status: {res.status}</span><br/>
-                                            <span>Assigned to: {res.assigned_incident_id || 'None'}</span>
+                                            <span>Assigned to: {targetIncidentId || 'None'}</span>
                                         </div>
                                     </Popup>
                                 </Marker>
                                 
-                                {assignedIncident && (
+                                {assignedIncident && res.status !== 'unavailable' && (
                                     <Polyline 
                                         positions={[position, [assignedIncident.location.lat, assignedIncident.location.lng]]}
                                         pathOptions={{ color: getResourceColor(res.status), weight: 3, dashArray: res.status === 'en_route' ? '5, 5' : '1' }}
+                                    />
+                                )}
+                                {assignedIncident && res.status === 'unavailable' && (
+                                    <Polyline 
+                                        positions={[position, [assignedIncident.location.lat, assignedIncident.location.lng]]}
+                                        pathOptions={{ color: '#ef4444', weight: 2, dashArray: '10, 10', opacity: 0.5 }}
                                     />
                                 )}
                             </Fragment>
